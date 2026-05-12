@@ -1111,50 +1111,97 @@ export default function App() {
   };
 
   const printPDF = (order) => {
-    const doc = new jsPDF();
     const subtotal = order.items.reduce(
       (sum, item) => sum + item.price * item.qty,
       0
     );
     const qtyCount = order.items.reduce((sum, item) => sum + item.qty, 0);
     const tax = qtyCount * taxPerItem;
-
-    doc.setFontSize(16);
-    doc.text("TABAN FOOD RECEIPT", 14, 16);
-    doc.setFontSize(11);
-    doc.text(`Date: ${order.date}`, 14, 24);
-    doc.text(`User: ${order.createdBy || "unknown"}`, 14, 30);
-
-    let y = 40;
-    doc.text("Item", 14, y);
-    doc.text("Qty", 110, y);
-    doc.text("Price", 140, y);
-    doc.text("Total", 176, y, { align: "right" });
-    y += 3;
-    doc.line(14, y, 196, y);
-    y += 7;
-
-    order.items.forEach((item) => {
-      const itemName =
-        item.name.length > 24 ? `${item.name.slice(0, 24)}...` : item.name;
-      doc.text(itemName, 14, y);
-      doc.text(String(item.qty), 110, y);
-      doc.text(`$${item.price.toFixed(2)}`, 140, y);
-      doc.text(`$${(item.price * item.qty).toFixed(2)}`, 176, y, {
-        align: "right",
-      });
-      y += 7;
+    const isDelivery = order.deliveryType === "delivery";
+    const deliveryLocation = getDeliveryLocation(order);
+    const estimateLines = order.items.reduce(
+      (sum, item) => sum + Math.ceil(String(item.name || "").length / 22),
+      0
+    );
+    const receiptHeight = Math.max(
+      95,
+      70 + estimateLines * 5 + order.items.length * 3 + (isDelivery ? 14 : 0)
+    );
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: [80, receiptHeight],
     });
 
-    y += 2;
-    doc.line(14, y, 196, y);
-    y += 8;
-    doc.text(`Subtotal: $${subtotal.toFixed(2)}`, 14, y);
-    y += 7;
-    doc.text(`Tax ($0.05/item): $${tax.toFixed(2)}`, 14, y);
-    y += 7;
+    const pageWidth = 80;
+    const margin = 5;
+    const rightEdge = pageWidth - margin;
+    const divider = (yPos) => doc.line(margin, yPos, rightEdge, yPos);
+
+    doc.setProperties({ title: `TABAN FOOD RECEIPT ${order.id || ""}` });
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text(`Grand Total: $${order.total.toFixed(2)}`, 14, y);
+    doc.text("TABAN FOOD", pageWidth / 2, 8, { align: "center" });
+    doc.setFontSize(9);
+    doc.text("RECEIPT", pageWidth / 2, 13, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    let y = 20;
+    doc.text(`Date: ${order.date}`, margin, y);
+    y += 5;
+    doc.text(`User: ${order.createdBy || "unknown"}`, margin, y);
+    y += 5;
+    doc.text(`Type: ${order.deliveryType || "pickup"}`, margin, y);
+    y += 5;
+
+    if (isDelivery && deliveryLocation) {
+      const locationLines = doc.splitTextToSize(
+        `Location: ${deliveryLocation.label}`,
+        68
+      );
+      doc.text(locationLines, margin, y);
+      y += locationLines.length * 4 + 2;
+    }
+
+    divider(y);
+    y += 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Item", margin, y);
+    doc.text("Qty", 47, y);
+    doc.text("Price", 58, y, { align: "right" });
+    doc.text("Total", rightEdge, y, { align: "right" });
+    y += 3;
+    divider(y);
+    y += 5;
+
+    doc.setFont("helvetica", "normal");
+    order.items.forEach((item) => {
+      const itemLines = doc.splitTextToSize(String(item.name || "Item"), 38);
+      doc.text(itemLines, margin, y);
+      doc.text(String(item.qty), 48, y, { align: "center" });
+      doc.text(`$${item.price.toFixed(2)}`, 58, y, { align: "right" });
+      doc.text(`$${(item.price * item.qty).toFixed(2)}`, rightEdge, y, {
+        align: "right",
+      });
+      y += itemLines.length * 4 + 3;
+    });
+
+    divider(y);
+    y += 6;
+    doc.text(`Subtotal: $${subtotal.toFixed(2)}`, margin, y);
+    y += 5;
+    doc.text(`Tax ($0.05/item): $${tax.toFixed(2)}`, margin, y);
+    y += 6;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`GRAND TOTAL: $${order.total.toFixed(2)}`, rightEdge, y, {
+      align: "right",
+    });
+    y += 9;
+    doc.setFontSize(8);
+    doc.text("Thank you!", pageWidth / 2, y, { align: "center" });
     doc.autoPrint();
     const pdfUrl = doc.output("bloburl");
     window.open(pdfUrl, "_blank");
