@@ -1,0 +1,120 @@
+/* ================= HEADER ================= */
+.main-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 14px 28px;
+  border-bottom: 1px solid #dbe4ef;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+.brand-click {
+  cursor: pointer;
+}
+.taban-text {
+  color: #0f172a;
+  margin-right: 5px;
+}
+.food-text {
+  color: var(--accent-color);
+}
+.top-nav ul {
+  display: flex;
+  list-style: none;
+  margin-left: auto;
+  gap: 12px;
+}
+.top-nav li {
+  cursor: pointer;
+  padding: 9px 16px;
+  border-radius: 25px;
+  transition: 0.3s;
+  font-weight: 700;
+  color: #334155;
+}
+.top-nav li:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.top-nav .nav-icon-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #eff6ff;
+  border: 1px solid #cfe0ff;
+  color: var(--accent-color);
+  font-size: 18px;
+}
+.top-nav .nav-icon-btn:hover {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+.top-nav .nav-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eff6ff;
+  border: 1px solid #cfe0ff;
+  color: #1e3a8a;
+  cursor: default;
+}
+.top-nav .nav-user:hover {
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+.nav-user-clickable {
+  cursor: pointer;
+}
+.nav-profile-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #dbeafe;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--accent-color);
+}
+.nav-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.avatar-btn {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(17, 24, 39, 0.35);
+  color: #e5e7eb;
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.avatar-btn:hover {
+  background: rgba(17, 24, 39, 0.6);
+}
+.avatar-input {
+  display: none;
+}
