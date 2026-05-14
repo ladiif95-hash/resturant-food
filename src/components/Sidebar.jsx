@@ -18,7 +18,39 @@ export default function Sidebar({
   setPage,
   isAdmin,
   onOpenProfile,
+  activeSettingsSection,
+  setActiveSettingsSection,
 }) {
+  const settingsGroups = [
+    {
+      title: "Business",
+      items: [
+        { id: "restaurant", label: "Restaurant Info" },
+        { id: "payment", label: "Payment" },
+        { id: "delivery", label: "Delivery" },
+        { id: "menu", label: "Menu Settings" },
+      ],
+    },
+    {
+     
+      items: [
+        { id: isAdmin ? "admin" : "user", label: isAdmin ? "Users" : "User Profile" },
+        { id: "account", label: "Account" },
+        { id: "access", label: "Permissions" },
+      ],
+    },
+    {
+      title: "System",
+      items: [{ id: "system", label: "System" }],
+    },
+  ];
+
+  const openSettingsSection = (sectionId) => {
+    setPage("settings");
+    setActiveSettingsSection?.(sectionId);
+  };
+  
+
   return (
     <>
       {isCollapsed && (
@@ -150,7 +182,7 @@ export default function Sidebar({
             )}
             <button
               className={`side-nav-btn ${page === "settings" ? "active" : ""}`}
-              onClick={() => setPage("settings")}
+              onClick={() => openSettingsSection(activeSettingsSection || "restaurant")}
             >
               <FaCog />
               <span>Settings</span>
@@ -162,6 +194,29 @@ export default function Sidebar({
               <FaUserCircle />
               <span>Profile</span>
             </button>
+
+            {isAdmin && page === "settings" && (
+              <div className="side-settings-menu">
+                {settingsGroups.map((group) => (
+                  <div key={group.title} className="side-settings-group">
+                    <p className="side-settings-title">{group.title}</p>
+                    {group.items.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`side-settings-btn ${
+                          activeSettingsSection === item.id ? "active" : ""
+                        }`}
+                        onClick={() => openSettingsSection(item.id)}
+                      >
+                        <span className="side-settings-square" />
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
       )}

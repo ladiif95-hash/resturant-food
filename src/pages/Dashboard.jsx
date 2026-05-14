@@ -40,7 +40,6 @@ export default function Dashboard({
         <div className="dashboard-topbar">
           <div className="dashboard-title-block">
             <h2 className="invoice-title dashboard-main-title">Business Dashboard</h2>
-            <p className="dashboard-subtitle">Well-organized performance summary and live operational data</p>
           </div>
           <div className="dashboard-top-actions">
             <div className="dashboard-pills">

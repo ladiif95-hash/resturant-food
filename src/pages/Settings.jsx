@@ -18,9 +18,13 @@ export default function Settings({
   onMenuItemPriceChange,
   onMenuItemStockToggle,
   onMenuItemDelete,
+  onMenuItemAdd,
   managedUsers,
   onAdminUpdateUserCredentials,
   onAdminAddUser,
+  onAdminDeleteUser,
+  activeSettingsSection,
+  setActiveSettingsSection,
 }) {
   return (
     <SettingsForm
@@ -40,9 +44,13 @@ export default function Settings({
       onMenuItemPriceChange={onMenuItemPriceChange}
       onMenuItemStockToggle={onMenuItemStockToggle}
       onMenuItemDelete={onMenuItemDelete}
+      onMenuItemAdd={onMenuItemAdd}
       managedUsers={managedUsers}
       onAdminUpdateUserCredentials={onAdminUpdateUserCredentials}
       onAdminAddUser={onAdminAddUser}
+      onAdminDeleteUser={onAdminDeleteUser}
+      activeSettingsSection={activeSettingsSection}
+      setActiveSettingsSection={setActiveSettingsSection}
     />
   );
 }

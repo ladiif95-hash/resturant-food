@@ -11,7 +11,9 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(errorBody.message || "API request failed");
+    const error = new Error(errorBody.message || "API request failed");
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) return null;
@@ -24,6 +26,11 @@ export const api = {
     request("/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
+    }),
+  migrateLocalStorage: (data) =>
+    request("/migrate-local-storage", {
+      method: "POST",
+      body: JSON.stringify(data),
     }),
   createOrder: (order) =>
     request("/orders", {
@@ -43,6 +50,20 @@ export const api = {
     request("/users", {
       method: "PUT",
       body: JSON.stringify({ users }),
+    }),
+  createUser: (user) =>
+    request("/users", {
+      method: "POST",
+      body: JSON.stringify(user),
+    }),
+  updateUser: (username, user) =>
+    request(`/users/${encodeURIComponent(username)}`, {
+      method: "PUT",
+      body: JSON.stringify(user),
+    }),
+  deleteUser: (username) =>
+    request(`/users/${encodeURIComponent(username)}`, {
+      method: "DELETE",
     }),
   saveSetting: (key, value) =>
     request(`/settings/${key}`, {

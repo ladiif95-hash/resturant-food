@@ -4,6 +4,9 @@ export default function Orders({
   ordersSearch,
   setOrdersSearch,
   setOrdersPageNo,
+  ordersUserFilter,
+  setOrdersUserFilter,
+  orderUserOptions,
   ordersTypeFilter,
   setOrdersTypeFilter,
   ordersSort,
@@ -27,6 +30,11 @@ export default function Orders({
 
   const handleTypeChange = (event) => {
     setOrdersTypeFilter(event.target.value);
+    setOrdersPageNo(1);
+  };
+
+  const handleUserChange = (event) => {
+    setOrdersUserFilter(event.target.value);
     setOrdersPageNo(1);
   };
 
@@ -58,6 +66,18 @@ export default function Orders({
             value={ordersSearch}
             onChange={handleSearchChange}
           />
+          <select
+            className="orders-select"
+            value={ordersUserFilter}
+            onChange={handleUserChange}
+          >
+            <option value="all">All Users</option>
+            {orderUserOptions.map((username) => (
+              <option key={username} value={username}>
+                {username}
+              </option>
+            ))}
+          </select>
           <select
             className="orders-select"
             value={ordersTypeFilter}
@@ -104,53 +124,43 @@ export default function Orders({
             const orderNo = (ordersPageNo - 1) * Number(ordersPageSize) + index + 1;
 
             return (
-              <article key={order.id} className="order-detail-card print-order-card">
+              <article key={order.id} className="order-detail-card orders-grid-card print-order-card">
                 <div className="order-detail-head">
-                  <h3>Order #{orderNo}</h3>
-                  <span className="order-detail-date">{order.date}</span>
-                </div>
-
-                <div className="order-detail-meta">
-                  <p>
-                    Type: <strong>{orderType}</strong>
-                  </p>
-                  <p>
-                    User: <strong>{order.createdBy || "unknown"}</strong>
-                  </p>
-                  {orderType === "delivery" ? (
-                    <>
-                      <p>
-                        Degmada: <strong>{location.district}</strong>
-                      </p>
-                      <p>
-                        Xaafada: <strong>{location.neighborhood}</strong>
-                      </p>
-                    </>
-                  ) : (
-                    <p>
-                      Address: <strong>Pickup</strong>
-                    </p>
-                  )}
+                  <div>
+                    <h3>Order #{orderNo}</h3>
+                    <span className="order-detail-date">{order.date}</span>
+                  </div>
+                  <div className="order-detail-meta">
+                    <span>Type: <strong>{orderType}</strong></span>
+                    <span>User: <strong>{order.createdBy || "unknown"}</strong></span>
+                    {orderType === "delivery" ? (
+                      <>
+                        <span>Degmada: <strong>{location.district}</strong></span>
+                        <span>Xaafada: <strong>{location.neighborhood}</strong></span>
+                      </>
+                    ) : (
+                      <span>Address: <strong>Pickup</strong></span>
+                    )}
+                    <span className="order-status-chip">Status: New</span>
+                  </div>
                 </div>
 
                 <div className="order-detail-table-wrap">
                   <table className="order-detail-table">
                     <thead>
                       <tr>
-                        <th>No</th>
                         <th>Item</th>
-                        <th>Qty</th>
                         <th>Price</th>
+                        <th>Qty</th>
                         <th>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {orderItems.map((item, itemIndex) => (
                         <tr key={`${order.id}-${item.id}-${itemIndex}`}>
-                          <td>{itemIndex + 1}</td>
                           <td>{item.name}</td>
-                          <td>{item.qty}</td>
                           <td>${Number(item.price || 0).toFixed(2)}</td>
+                          <td>{item.qty}</td>
                           <td>${Number((item.price || 0) * (item.qty || 0)).toFixed(2)}</td>
                         </tr>
                       ))}
@@ -169,7 +179,7 @@ export default function Orders({
                     className="pay-btn order-action-btn"
                     onClick={() => printPDF(order)}
                   >
-                    Print
+                    Print Receipt
                   </button>
                   <button
                     type="button"

@@ -25,12 +25,6 @@ export const DEFAULT_PAYMENT_SETTINGS = {
   cashOnDelivery: true,
 };
 
-export const DEFAULT_USERS = [
-  { username: "abdi ladiif", password: "1234", role: "user" },
-  { username: "saabir2", password: "1234", role: "user" },
-  { username: "admin", password: "1234", role: "admin" },
-];
-
 export const MOGADISHU_DISTRICTS = [
   "Hodan",
   "Howlwadaag",

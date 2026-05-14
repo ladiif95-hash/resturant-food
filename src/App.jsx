@@ -15,7 +15,6 @@ import {
   DEFAULT_DELIVERY_SETTINGS,
   DEFAULT_PAYMENT_SETTINGS,
   DEFAULT_RESTAURANT_INFO,
-  DEFAULT_USERS,
   MENU_ITEMS_KEY,
   DELIVERY_SETTINGS_KEY,
   MENU,
@@ -97,63 +96,51 @@ const buildMenuSections = (items) => {
   };
 };
 
+const LEGACY_STORAGE_KEYS = [
+  CURRENT_USER_KEY,
+  USERS_KEY,
+  MENU_ITEMS_KEY,
+  SAVED_ORDERS_KEY,
+  RESTAURANT_INFO_KEY,
+  PAYMENT_SETTINGS_KEY,
+  DELIVERY_SETTINGS_KEY,
+  "taban_ui_settings_v1",
+];
+
+const readLegacyStorage = () => ({
+  currentUser: safeParseJSON(localStorage.getItem(CURRENT_USER_KEY), null),
+  users: safeParseJSON(localStorage.getItem(USERS_KEY), []),
+  menuItems: safeParseJSON(localStorage.getItem(MENU_ITEMS_KEY), []),
+  savedOrders: safeParseJSON(localStorage.getItem(SAVED_ORDERS_KEY), []),
+  restaurantInfo: safeParseJSON(localStorage.getItem(RESTAURANT_INFO_KEY), null),
+  paymentSettings: safeParseJSON(localStorage.getItem(PAYMENT_SETTINGS_KEY), null),
+  deliverySettings: safeParseJSON(localStorage.getItem(DELIVERY_SETTINGS_KEY), null),
+});
+
+const hasLegacyStorageData = (data) =>
+  (Array.isArray(data.users) && data.users.length > 0) ||
+  (Array.isArray(data.menuItems) && data.menuItems.length > 0) ||
+  (Array.isArray(data.savedOrders) && data.savedOrders.length > 0) ||
+  Boolean(data.restaurantInfo || data.paymentSettings || data.deliverySettings);
+
+const clearLegacyStorage = () => {
+  LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+};
+
 export default function App() {
   const [orders, setOrders] = useState([]);
-  const [menuItems, setMenuItems] = useState(() => {
-    const raw = localStorage.getItem(MENU_ITEMS_KEY);
-    const parsed = safeParseJSON(raw, null);
-    return normalizeMenuItems(parsed || MENU);
-  });
-  const [savedOrders, setSavedOrders] = useState(() => {
-    const raw = localStorage.getItem(SAVED_ORDERS_KEY);
-    return safeParseJSON(raw, []);
-  });
-  const [currentUser, setCurrentUser] = useState(() => {
-    const raw = localStorage.getItem(CURRENT_USER_KEY);
-    return safeParseJSON(raw, null);
-  });
-  const [managedUsers, setManagedUsers] = useState(() => {
-    const raw = localStorage.getItem(USERS_KEY);
-    const parsed = safeParseJSON(raw, DEFAULT_USERS);
-    return Array.isArray(parsed) && parsed.length ? parsed : DEFAULT_USERS;
-  });
-  const [restaurantInfo, setRestaurantInfo] = useState(() => {
-    const raw = localStorage.getItem(RESTAURANT_INFO_KEY);
-    const parsed = safeParseJSON(raw, {});
-    return {
-      ...DEFAULT_RESTAURANT_INFO,
-      ...parsed,
-      email:
-        typeof parsed?.email === "string" && parsed.email.trim()
-          ? parsed.email
-          : DEFAULT_RESTAURANT_INFO.email,
-      location:
-        typeof parsed?.location === "string" && parsed.location.trim()
-          ? parsed.location
-          : DEFAULT_RESTAURANT_INFO.location,
-    };
-  });
-  const [paymentSettings, setPaymentSettings] = useState(() => {
-    const raw = localStorage.getItem(PAYMENT_SETTINGS_KEY);
-    const parsed = safeParseJSON(raw, {});
-    return { ...DEFAULT_PAYMENT_SETTINGS, ...parsed };
-  });
-  const [deliverySettings, setDeliverySettings] = useState(() => {
-    const raw = localStorage.getItem(DELIVERY_SETTINGS_KEY);
-    const parsed = safeParseJSON(raw, {});
-    const normalizedAreas = Array.isArray(parsed.deliveryAreas)
-      ? parsed.deliveryAreas
-      : DEFAULT_DELIVERY_SETTINGS.deliveryAreas;
-    return {
-      ...DEFAULT_DELIVERY_SETTINGS,
-      ...parsed,
-      deliveryAreas: normalizedAreas,
-    };
-  });
+  const [menuItems, setMenuItems] = useState(() => normalizeMenuItems(MENU));
+  const [savedOrders, setSavedOrders] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [managedUsers, setManagedUsers] = useState([]);
+  const [restaurantInfo, setRestaurantInfo] = useState(DEFAULT_RESTAURANT_INFO);
+  const [paymentSettings, setPaymentSettings] = useState(DEFAULT_PAYMENT_SETTINGS);
+  const [deliverySettings, setDeliverySettings] = useState(DEFAULT_DELIVERY_SETTINGS);
+  const [backendStatus, setBackendStatus] = useState("loading");
   const [usernameInput, setUsernameInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState("");
-  const [category, setCategory] = useState("fast");
+  const [category, setCategory] = useState("all");
   const [page, setPage] = useState("dashboard");
   const [discount, setDiscount] = useState(0);
   const [menuSearch, setMenuSearch] = useState("");
@@ -172,31 +159,43 @@ export default function App() {
   const [ordersPageNo, setOrdersPageNo] = useState(1);
   const [ordersPageSize, setOrdersPageSize] = useState(5);
   const [ordersSearch, setOrdersSearch] = useState("");
+  const [ordersUserFilter, setOrdersUserFilter] = useState("all");
   const [ordersTypeFilter, setOrdersTypeFilter] = useState("all");
   const [ordersSort, setOrdersSort] = useState("newest");
+  const [activeSettingsSection, setActiveSettingsSection] = useState("restaurant");
   const avatarInputRef = useRef(null);
 
   const menu = useMemo(() => buildMenuSections(menuItems), [menuItems]);
   const taxPerItem = 0.05;
-  const visibleItems = menu[category] || menu.fast;
+  const visibleItems =
+    category === "all"
+      ? MENU_CATEGORY_KEYS.flatMap((key) => menu[key] || [])
+      : menu[category] || menu.fast;
   const normalizedMenuSearch = menuSearch.trim().toLowerCase();
   const filteredMenuItems = visibleItems.filter((item) =>
     item.name.toLowerCase().includes(normalizedMenuSearch)
   );
-  const dashboardItems = menu[category] || menu.fast;
+  const dashboardItems = visibleItems;
   const totalSystemItems = menu.all.length;
   const isAdmin = currentUser?.role === "admin";
 
   useEffect(() => {
     let isMounted = true;
 
-    api
-      .bootstrap()
-      .then((data) => {
+    const loadDatabaseData = async () => {
+      const legacyData = readLegacyStorage();
+
+      try {
+        if (hasLegacyStorageData(legacyData)) {
+          await api.migrateLocalStorage(legacyData);
+          clearLegacyStorage();
+        }
+
+        const data = await api.bootstrap();
         if (!isMounted) return;
 
-        const nextUsers =
-          Array.isArray(data.users) && data.users.length ? data.users : DEFAULT_USERS;
+        const backendUsers =
+          Array.isArray(data.users) && data.users.length ? data.users : [];
         const nextMenuItems = normalizeMenuItems(data.menuItems || MENU);
         const nextSavedOrders = Array.isArray(data.savedOrders)
           ? data.savedOrders
@@ -217,56 +216,36 @@ export default function App() {
             : DEFAULT_DELIVERY_SETTINGS.deliveryAreas,
         };
 
-        setManagedUsers(nextUsers);
+        setManagedUsers(backendUsers);
         setMenuItems(nextMenuItems);
         setSavedOrders(nextSavedOrders);
         setRestaurantInfo(nextRestaurantInfo);
         setPaymentSettings(nextPaymentSettings);
         setDeliverySettings(nextDeliverySettings);
+        setBackendStatus("ready");
 
-        localStorage.setItem(USERS_KEY, JSON.stringify(nextUsers));
-        localStorage.setItem(MENU_ITEMS_KEY, JSON.stringify(nextMenuItems));
-        localStorage.setItem(SAVED_ORDERS_KEY, JSON.stringify(nextSavedOrders));
-        localStorage.setItem(RESTAURANT_INFO_KEY, JSON.stringify(nextRestaurantInfo));
-        localStorage.setItem(PAYMENT_SETTINGS_KEY, JSON.stringify(nextPaymentSettings));
-        localStorage.setItem(DELIVERY_SETTINGS_KEY, JSON.stringify(nextDeliverySettings));
-      })
-      .catch((error) => {
-        console.warn("API bootstrap failed, using local data.", error);
-        const usersRaw = localStorage.getItem(USERS_KEY);
-        const localUsers = safeParseJSON(usersRaw, null);
-        if (!Array.isArray(localUsers) || localUsers.length === 0) {
-          localStorage.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS));
-          setManagedUsers(DEFAULT_USERS);
-          return;
+        if (legacyData.currentUser?.username) {
+          const activeUser = backendUsers.find(
+            (user) => user.username === legacyData.currentUser.username
+          );
+          if (activeUser) {
+            setCurrentUser((prev) => prev || activeUser);
+          }
         }
-        setManagedUsers(localUsers);
-      });
+      } catch (error) {
+        console.warn("API bootstrap failed.", error);
+        if (isMounted) {
+          setBackendStatus("error");
+        }
+      }
+    };
+
+    loadDatabaseData();
 
     return () => {
       isMounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(SAVED_ORDERS_KEY, JSON.stringify(savedOrders));
-  }, [savedOrders]);
-
-  useEffect(() => {
-    localStorage.setItem(MENU_ITEMS_KEY, JSON.stringify(menuItems));
-  }, [menuItems]);
-
-  useEffect(() => {
-    localStorage.setItem(RESTAURANT_INFO_KEY, JSON.stringify(restaurantInfo));
-  }, [restaurantInfo]);
-
-  useEffect(() => {
-    localStorage.setItem(PAYMENT_SETTINGS_KEY, JSON.stringify(paymentSettings));
-  }, [paymentSettings]);
-
-  useEffect(() => {
-    localStorage.setItem(DELIVERY_SETTINGS_KEY, JSON.stringify(deliverySettings));
-  }, [deliverySettings]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30000);
@@ -334,10 +313,23 @@ export default function App() {
   const visibleSavedOrders = isAdmin
     ? savedOrders
     : savedOrders.filter((order) => order.createdBy === currentUser?.username);
+  const orderUserOptions = useMemo(() => {
+    const names = new Set();
+    managedUsers
+      .filter((user) => user.role !== "admin")
+      .forEach((user) => names.add(user.username));
+    savedOrders.forEach((order) => {
+      if (order.createdBy) names.add(order.createdBy);
+    });
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [managedUsers, savedOrders]);
   const normalizedOrdersSearch = ordersSearch.trim().toLowerCase();
   const filteredSortedOrders = useMemo(() => {
     const filtered = visibleSavedOrders.filter((order) => {
       const type = order.deliveryType || "pickup";
+      if (ordersUserFilter !== "all" && (order.createdBy || "unknown") !== ordersUserFilter) {
+        return false;
+      }
       if (ordersTypeFilter !== "all" && type !== ordersTypeFilter) {
         return false;
       }
@@ -367,7 +359,13 @@ export default function App() {
       if (ordersSort === "lowest") return a.total - b.total;
       return timeB - timeA;
     });
-  }, [visibleSavedOrders, ordersTypeFilter, normalizedOrdersSearch, ordersSort]);
+  }, [
+    visibleSavedOrders,
+    ordersUserFilter,
+    ordersTypeFilter,
+    normalizedOrdersSearch,
+    ordersSort,
+  ]);
   const totalOrdersPages = Math.max(
     1,
     Math.ceil(filteredSortedOrders.length / ordersPageSize)
@@ -517,7 +515,11 @@ export default function App() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
   const selectedCategoryLabel =
-    category === "normalday" ? "Normal Day" : category.charAt(0).toUpperCase() + category.slice(1);
+    category === "all"
+      ? "All"
+      : category === "normalday"
+        ? "Normal Day"
+        : category.charAt(0).toUpperCase() + category.slice(1);
   const dashboardSellerTotals = dashboardOrders.reduce((acc, order) => {
     const owner = order.createdBy || "unknown";
     acc[owner] = (acc[owner] || 0) + order.total;
@@ -546,18 +548,8 @@ export default function App() {
   }, [savedOrders, nonAdminUsers]);
   const adminUserOptions = userSalesList.map((user) => user.username);
   const selectedUsersSales = useMemo(() => {
-    const totalsByUser = userSalesList.reduce((acc, user) => {
-      acc[user.username] = user.total;
-      return acc;
-    }, {});
-
-    return selectedAdminUsers
-      .filter(Boolean)
-      .map((username) => ({
-        username,
-        total: totalsByUser[username] || 0,
-      }));
-  }, [selectedAdminUsers, userSalesList]);
+    return userSalesList;
+  }, [userSalesList]);
   const getDeliveryLocation = (order) => {
     const district = (order.deliveryDistrict || "").trim();
     const neighborhood = (order.deliveryNeighborhood || "").trim();
@@ -692,9 +684,10 @@ export default function App() {
     try {
       savedOrder = await api.createOrder(newOrder);
     } catch (error) {
-      setAlertMessage("Backend not connected. Order saved locally.");
+      setAlertMessage("Backend not connected. Order was not saved.");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 2500);
+      return;
     }
 
     setSavedOrders((prev) => [...prev, savedOrder]);
@@ -705,7 +698,6 @@ export default function App() {
     setDeliveryDistrict("");
     setDeliveryNeighborhood("");
 
-    // Show custom alert
     setAlertMessage("ORDER WA LA GUDBIYEY!");
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 2500);
@@ -729,12 +721,13 @@ export default function App() {
 
     try {
       foundUser = await api.login(cleanUsername, passwordInput);
-    } catch {
-      const usersRaw = localStorage.getItem(USERS_KEY);
-      const localUsers = safeParseJSON(usersRaw, DEFAULT_USERS);
-      foundUser = localUsers.find(
-        (u) => u.username === cleanUsername && u.password === passwordInput
+    } catch (error) {
+      setLoginError(
+        error.status === 401
+          ? "Invalid username or password."
+          : "Backend/database is not connected."
       );
+      return;
     }
 
     if (!foundUser) {
@@ -742,7 +735,6 @@ export default function App() {
       return;
     }
 
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(foundUser));
     setCurrentUser(foundUser);
     setLoginError("");
     setUsernameInput("");
@@ -750,7 +742,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(CURRENT_USER_KEY);
+    clearLegacyStorage();
     setCurrentUser(null);
     setPage("pos");
   };
@@ -829,22 +821,12 @@ export default function App() {
     api.saveSetting("restaurantInfo", nextInfo).catch(() => {});
   };
 
-  const persistUsers = (users) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    setManagedUsers(users);
-    api.saveUsers(users).catch(() => {
-      setAlertMessage("Users saved locally. Backend sync failed.");
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 2500);
-    });
-  };
-
   const persistMenuItems = (updater) => {
     setMenuItems((prev) => {
       const nextItems =
         typeof updater === "function" ? updater(prev) : normalizeMenuItems(updater);
       api.saveMenuItems(nextItems).catch(() => {
-        setAlertMessage("Menu saved locally. Backend sync failed.");
+        setAlertMessage("Menu sync failed. Database was not updated.");
         setShowAlert(true);
         setTimeout(() => setShowAlert(false), 2500);
       });
@@ -885,6 +867,67 @@ export default function App() {
     setAlertMessage("Product deleted.");
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 2500);
+  };
+
+  const handleMenuItemAdd = (product) => {
+    if (!isAdmin) return false;
+
+    const cleanName = String(product?.name || "").trim();
+    const cleanCategory = String(product?.category || "fast");
+    const parsedPrice = Number(product?.price);
+    const cleanImage = String(product?.image || "").trim();
+
+    if (!cleanName) {
+      setAlertMessage("Product name is required.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    if (!MENU_CATEGORY_KEYS.includes(cleanCategory)) {
+      setAlertMessage("Choose a valid category.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      setAlertMessage("Enter a valid product price.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    if (
+      menuItems.some(
+        (item) => item.name.trim().toLowerCase() === cleanName.toLowerCase()
+      )
+    ) {
+      setAlertMessage("Product name already exists.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    persistMenuItems((prev) => {
+      const nextId = prev.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1;
+      return [
+        ...prev,
+        {
+          id: nextId,
+          name: cleanName,
+          price: parsedPrice,
+          image: cleanImage,
+          category: cleanCategory,
+          outOfStock: Boolean(product?.outOfStock),
+        },
+      ];
+    });
+
+    setAlertMessage("New product added.");
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 2500);
+    return true;
   };
 
   const handlePaymentSettingsChange = (field, value) => {
@@ -955,16 +998,21 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  const handleAdminUpdateUserCredentials = (
+  const handleAdminUpdateUserCredentials = async (
     selectedUsername,
     nextUsername,
-    nextPassword
+    nextPassword,
+    nextEmail,
+    nextPhone
   ) => {
     if (!currentUser || currentUser.role !== "admin") return false;
 
     const targetUsername = (selectedUsername || "").trim();
     const cleanUsername = (nextUsername || "").trim();
     const cleanPassword = (nextPassword || "").trim();
+    const cleanEmail = (nextEmail || "").trim();
+    const cleanPhone = (nextPhone || "").trim();
+    const localUsers = managedUsers.length ? managedUsers : [];
 
     if (!targetUsername) {
       setAlertMessage("Select a user first.");
@@ -984,15 +1032,13 @@ export default function App() {
       setTimeout(() => setShowAlert(false), 2500);
       return false;
     }
-    if (!cleanPassword || cleanPassword.length < 4) {
+    if (cleanPassword && cleanPassword.length < 4) {
       setAlertMessage("New password must be at least 4 characters.");
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 2500);
       return false;
     }
 
-    const usersRaw = localStorage.getItem(USERS_KEY);
-    const localUsers = safeParseJSON(usersRaw, DEFAULT_USERS);
     const targetUser = localUsers.find(
       (user) => user.username === targetUsername && user.role !== "admin"
     );
@@ -1014,12 +1060,22 @@ export default function App() {
       return false;
     }
 
-    const updatedUsers = localUsers.map((user) =>
-      user.username === targetUsername
-        ? { ...user, username: cleanUsername, password: cleanPassword }
-        : user
-    );
-    persistUsers(updatedUsers);
+    try {
+      const savedUser = await api.updateUser(targetUsername, {
+        username: cleanUsername,
+        ...(cleanPassword ? { password: cleanPassword } : {}),
+        email: cleanEmail,
+        phone: cleanPhone,
+      });
+      setManagedUsers((prev) =>
+        prev.map((user) => (user.username === targetUsername ? savedUser : user))
+      );
+    } catch (error) {
+      setAlertMessage(error.message || "User update failed on database.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
 
     setAlertMessage("User updated successfully.");
     setShowAlert(true);
@@ -1027,11 +1083,13 @@ export default function App() {
     return true;
   };
 
-  const handleAdminAddUser = (username, password) => {
+  const handleAdminAddUser = async (username, password, email, phone) => {
     if (!currentUser || currentUser.role !== "admin") return false;
 
     const cleanUsername = (username || "").trim();
     const cleanPassword = (password || "").trim();
+    const cleanEmail = (email || "").trim();
+    const cleanPhone = (phone || "").trim();
 
     if (!cleanUsername) {
       setAlertMessage("Username is required.");
@@ -1051,9 +1109,20 @@ export default function App() {
       setTimeout(() => setShowAlert(false), 2500);
       return false;
     }
+    if (!cleanEmail) {
+      setAlertMessage("Gmail is required.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+    if (!cleanPhone) {
+      setAlertMessage("Phone number is required.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
 
-    const usersRaw = localStorage.getItem(USERS_KEY);
-    const localUsers = safeParseJSON(usersRaw, DEFAULT_USERS);
+    const localUsers = managedUsers.length ? managedUsers : [];
     if (localUsers.some((user) => user.username === cleanUsername)) {
       setAlertMessage("Username already exists.");
       setShowAlert(true);
@@ -1061,13 +1130,77 @@ export default function App() {
       return false;
     }
 
-    const updatedUsers = [
-      ...localUsers,
-      { username: cleanUsername, password: cleanPassword, role: "user" },
-    ];
-    persistUsers(updatedUsers);
+    let savedUser = null;
+    try {
+      savedUser = await api.createUser({
+        username: cleanUsername,
+        password: cleanPassword,
+        email: cleanEmail,
+        phone: cleanPhone,
+      });
+      setManagedUsers((prev) => [...prev, savedUser]);
+    } catch (error) {
+      setAlertMessage(error.message || "User create failed on database.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    setSelectedAdminUsers((prev) => {
+      if (prev.includes(cleanUsername)) return prev;
+      const emptyIndex = prev.findIndex((username) => !username);
+      if (emptyIndex === -1) return [...prev, cleanUsername];
+      const next = [...prev];
+      next[emptyIndex] = cleanUsername;
+      return next;
+    });
 
     setAlertMessage("New user added.");
+    setShowAlert(true);
+    setTimeout(() => setShowAlert(false), 2500);
+    return true;
+  };
+
+  const handleAdminDeleteUser = async (username) => {
+    if (!currentUser || currentUser.role !== "admin") return false;
+
+    const targetUsername = (username || "").trim();
+    if (!targetUsername) {
+      setAlertMessage("Select a user first.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    const localUsers = managedUsers.length ? managedUsers : [];
+    const targetUser = localUsers.find(
+      (user) => user.username === targetUsername && user.role !== "admin"
+    );
+
+    if (!targetUser) {
+      setAlertMessage("Selected user not found.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    try {
+      await api.deleteUser(targetUsername);
+      setManagedUsers((prev) =>
+        prev.filter((user) => user.username !== targetUsername)
+      );
+    } catch (error) {
+      setAlertMessage(error.message || "User delete failed on database.");
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 2500);
+      return false;
+    }
+
+    setSelectedAdminUsers((prev) =>
+      prev.map((name) => (name === targetUsername ? "" : name))
+    );
+
+    setAlertMessage("User deleted successfully.");
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 2500);
     return true;
@@ -1086,19 +1219,26 @@ export default function App() {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const avatar = typeof reader.result === "string" ? reader.result : "";
       if (!avatar || !currentUser) return;
 
-      const usersRaw = localStorage.getItem(USERS_KEY);
-      const localUsers = safeParseJSON(usersRaw, DEFAULT_USERS);
-      const updatedUsers = localUsers.map((user) =>
-        user.username === currentUser.username ? { ...user, avatar } : user
-      );
+      let updatedCurrentUser = { ...currentUser, avatar };
+      try {
+        updatedCurrentUser = await api.updateUser(currentUser.username, { avatar });
+        setManagedUsers((prev) =>
+          prev.map((user) =>
+            user.username === currentUser.username ? updatedCurrentUser : user
+          )
+        );
+      } catch (error) {
+        setAlertMessage("Profile photo database update failed.");
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 2500);
+        e.target.value = "";
+        return;
+      }
 
-      persistUsers(updatedUsers);
-      const updatedCurrentUser = { ...currentUser, avatar };
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedCurrentUser));
       setCurrentUser(updatedCurrentUser);
 
       setAlertMessage("Profile photo updated.");
@@ -1237,7 +1377,6 @@ export default function App() {
             <button type="submit" className="pay-btn">
               LOGIN
             </button>
-            <p className="login-help">Local users: abdi ladiif/1234, saabir2/1234, admin/1234</p>
           </form>
         </div>
       </div>
@@ -1261,6 +1400,8 @@ export default function App() {
           setPage={setPage}
           isAdmin={isAdmin}
           onOpenProfile={openProfilePopup}
+          activeSettingsSection={activeSettingsSection}
+          setActiveSettingsSection={setActiveSettingsSection}
         />
 
         <div className="content-area">
@@ -1327,6 +1468,9 @@ export default function App() {
             ordersSearch={ordersSearch}
             setOrdersSearch={setOrdersSearch}
             setOrdersPageNo={setOrdersPageNo}
+            ordersUserFilter={ordersUserFilter}
+            setOrdersUserFilter={setOrdersUserFilter}
+            orderUserOptions={orderUserOptions}
             ordersTypeFilter={ordersTypeFilter}
             setOrdersTypeFilter={setOrdersTypeFilter}
             ordersSort={ordersSort}
@@ -1375,9 +1519,13 @@ export default function App() {
             onMenuItemPriceChange={handleMenuItemPriceChange}
             onMenuItemStockToggle={handleMenuItemStockToggle}
             onMenuItemDelete={handleMenuItemDelete}
+            onMenuItemAdd={handleMenuItemAdd}
             managedUsers={managedUsers}
             onAdminUpdateUserCredentials={handleAdminUpdateUserCredentials}
             onAdminAddUser={handleAdminAddUser}
+            onAdminDeleteUser={handleAdminDeleteUser}
+            activeSettingsSection={activeSettingsSection}
+            setActiveSettingsSection={setActiveSettingsSection}
           />
         )}
 

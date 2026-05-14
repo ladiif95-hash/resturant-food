@@ -1,0 +1,7 @@
+
+> my@0.1.0 server
+> node server/index.js
+
+◇ injected env (3) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+TABAN FOOD API running on http://localhost:5050
+MongoDB connected: mongodb://ladiif95_db_user:***@ac-ew7mrod-shard-00-00.3al8xho.mongodb.net:27017,ac-ew7mrod-shard-00-01.3al8xho.mongodb.net:27017,ac-ew7mrod-shard-00-02.3al8xho.mongodb.net:27017/taban_food?ssl=true&authSource=admin&replicaSet=atlas-sxposl-shard-0&retryWrites=true&w=majority&appName=Cluster0

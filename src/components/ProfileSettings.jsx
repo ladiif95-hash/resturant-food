@@ -17,7 +17,7 @@ export default function ProfileSettings({
   };
 
   return (
-    <article className="settings-card settings-card-half">
+    <article className="settings-card settings-card-half restaurant-info-card">
       <div className="settings-card-head">
         <h3>Restaurant Information</h3>
         <span className={`settings-chip ${isAdmin ? "admin" : "readonly"}`}>
@@ -25,7 +25,7 @@ export default function ProfileSettings({
         </span>
       </div>
       <p className="settings-card-note">
-        Macluumaadka guud ee maqaayada: magaca, logo, contact, location, iyo waqtiyada.
+      
       </p>
 
       <div className="settings-form-grid">

@@ -51,7 +51,7 @@ export default function Menu({
           </div>
         </div>
         <div className="category-bar">
-          {["fast", "drinks", "normalday"].map((cat) => (
+          {["all", "fast", "drinks", "normalday"].map((cat) => (
             <button
               key={cat}
               className={`cat-btn ${category === cat ? "active" : ""}`}
