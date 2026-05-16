@@ -1,4 +1,16 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5050/api";
+const configuredApiUrl = process.env.REACT_APP_API_URL;
+const isBrowser = typeof window !== "undefined";
+const isLocalBrowser =
+  isBrowser && ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const pointsToLocalhost = (value = "") => /localhost|127\.0\.0\.1/.test(value);
+const localApiUrl = `http://${["localhost", "5050"].join(":")}/api`;
+
+const API_BASE_URL =
+  configuredApiUrl && (!pointsToLocalhost(configuredApiUrl) || isLocalBrowser)
+    ? configuredApiUrl
+    : isLocalBrowser
+      ? localApiUrl
+      : "/api";
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -13,6 +25,7 @@ async function request(path, options = {}) {
     const errorBody = await response.json().catch(() => ({}));
     const error = new Error(errorBody.message || "API request failed");
     error.status = response.status;
+    error.details = errorBody.details || "";
     throw error;
   }
 
@@ -21,6 +34,7 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  health: () => request("/health"),
   bootstrap: () => request("/bootstrap"),
   login: (username, password) =>
     request("/login", {

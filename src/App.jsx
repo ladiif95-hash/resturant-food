@@ -722,10 +722,11 @@ export default function App() {
     try {
       foundUser = await api.login(cleanUsername, passwordInput);
     } catch (error) {
+      const backendDetails = error.details ? ` ${error.details}` : "";
       setLoginError(
         error.status === 401
           ? "Invalid username or password."
-          : "Backend/database is not connected."
+          : `Backend/database is not connected.${backendDetails}`
       );
       return;
     }

@@ -23,3 +23,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
  v
+
+# local database and logs
+/data
+*.log
+*.err.log

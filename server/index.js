@@ -13,6 +13,43 @@ const redactMongoUri = (uri) => uri.replace(/\/\/([^:]+):([^@]+)@/, "//$1:***@")
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
+let databaseConnectionPromise = null;
+
+async function connectDatabase() {
+  if (mongoose.connection.readyState === 1) return;
+
+  if ((process.env.VERCEL || process.env.NODE_ENV === "production") && !process.env.MONGO_URI) {
+    const error = new Error("MONGO_URI is missing in Vercel Environment Variables.");
+    error.statusCode = 503;
+    throw error;
+  }
+
+  if (!databaseConnectionPromise) {
+    databaseConnectionPromise = mongoose
+      .connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
+      .then(async () => {
+        await seedDatabase();
+        console.log(`MongoDB connected: ${redactMongoUri(MONGO_URI)}`);
+      })
+      .catch((error) => {
+        databaseConnectionPromise = null;
+        error.statusCode = 503;
+        throw error;
+      });
+  }
+
+  await databaseConnectionPromise;
+}
+
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectDatabase();
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
 const DEFAULT_USERS = [
   { username: "abdi ladiif", password: "1234", role: "user", email: "", phone: "" },
   { username: "saabir2", password: "1234", role: "user", email: "", phone: "" },
@@ -644,19 +681,26 @@ app.put("/api/settings/:key", async (req, res, next) => {
 
 app.use((error, req, res, next) => {
   console.error(error);
-  res.status(500).json({ message: "Server error", details: error.message });
+  res.status(error.statusCode || 500).json({
+    message: error.statusCode === 503 ? "Database connection failed" : "Server error",
+    details: error.message,
+  });
 });
 
-mongoose
-  .connect(MONGO_URI)
-  .then(async () => {
-    await seedDatabase();
+async function startServer() {
+  try {
+    await connectDatabase();
     app.listen(PORT, () => {
       console.log(`TABAN FOOD API running on http://localhost:${PORT}`);
-      console.log(`MongoDB connected: ${redactMongoUri(MONGO_URI)}`);
     });
-  })
-  .catch((error) => {
+  } catch (error) {
     console.error("MongoDB connection failed:", error.message);
     process.exit(1);
-  });
+  }
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
