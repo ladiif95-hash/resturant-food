@@ -1,5 +1,8 @@
 .env
 data/
+backend/data/
+frontend/logs/
+backend/logs/
 *.log
 *.err.log
 node_modules/

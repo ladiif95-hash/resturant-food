@@ -1,0 +1,257 @@
+.main-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  color: #0f172a;
+  height: 58px;
+  padding: 10px 28px;
+  border-bottom: 1px solid #dbe4ef;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+.brand-click {
+  cursor: pointer;
+}
+.taban-text {
+  color: #063a3a;
+  margin-right: 5px;
+}
+.food-text {
+  color: #d6ad3f;
+}
+.top-nav ul {
+  display: flex;
+  list-style: none;
+  margin-left: auto;
+  gap: 12px;
+}
+.top-nav li {
+  cursor: pointer;
+  padding: 7px 12px;
+  border-radius: 25px;
+  transition: 0.3s;
+  font-weight: 700;
+  color: #334155;
+}
+.top-nav li:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.top-nav .nav-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f8f4df;
+  border: 1px solid #e6cc7a;
+  color: #0f766e;
+  font-size: 14px;
+}
+.top-nav .nav-icon-btn:hover {
+  background: #0f766e;
+  color: #fff7df;
+}
+.top-nav .nav-user-wrap {
+  position: relative;
+  padding: 0;
+  background: transparent;
+}
+.top-nav .nav-user-wrap:hover {
+  background: transparent;
+}
+.top-nav .nav-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8f4df;
+  border: 1px solid #e6cc7a;
+  color: #063a3a;
+  cursor: default;
+  font-size: 12px;
+}
+.top-nav .nav-user:hover {
+  background: #fff4cc;
+  color: #063a3a;
+}
+.nav-user-clickable {
+  cursor: pointer;
+}
+.nav-profile-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff4cc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #0f766e;
+}
+.nav-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+.avatar-btn {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(17, 24, 39, 0.35);
+  color: #e5e7eb;
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.avatar-btn:hover {
+  background: rgba(17, 24, 39, 0.6);
+}
+.avatar-input {
+  display: none;
+}
+.nav-user-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 260px;
+  border-radius: 0 0 12px 12px;
+  background: #147d7a;
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+  z-index: 1500;
+}
+.nav-user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 12px;
+}
+.nav-user-menu-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 9px;
+  background: #fbbf24;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 18px;
+}
+.nav-user-menu strong,
+.nav-user-menu small {
+  display: block;
+}
+.nav-user-menu strong {
+  font-size: 14px;
+}
+.nav-user-menu small {
+  margin-top: 3px;
+  color: #d7fffb;
+  font-size: 11px;
+}
+.nav-user-menu p,
+.nav-user-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+.nav-user-menu p {
+  margin: 0;
+}
+.nav-user-menu button {
+  cursor: pointer;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+.nav-user-menu button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+  .main-header {
+    height: 52px;
+    padding: 8px 12px;
+  }
+  .header-left {
+    min-width: 0;
+  }
+  .brand {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  .top-nav ul {
+    gap: 6px;
+    align-items: center;
+  }
+  .top-nav li {
+    padding: 5px 7px;
+    font-size: 11px;
+  }
+  .top-nav .nav-user {
+    max-width: 128px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .nav-profile-icon,
+  .nav-avatar {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+  }
+  .top-nav .nav-icon-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+  .nav-user-menu {
+    position: fixed;
+    top: 52px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    border-radius: 0 0 12px 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand {
+    font-size: 14px;
+  }
+  .top-nav .nav-user {
+    max-width: 104px;
+    font-size: 10px;
+    gap: 5px;
+  }
+  .top-nav .nav-icon-btn {
+    width: 28px;
+    height: 28px;
+  }
+}
