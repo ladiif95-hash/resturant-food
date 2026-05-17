@@ -46,6 +46,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ usernameOrEmail }),
     }),
+  verifyPasswordResetOtp: (usernameOrEmail, otp) =>
+    request("/password-reset/verify", {
+      method: "POST",
+      body: JSON.stringify({ usernameOrEmail, otp }),
+    }),
   confirmPasswordReset: (usernameOrEmail, otp, password) =>
     request("/password-reset/confirm", {
       method: "POST",

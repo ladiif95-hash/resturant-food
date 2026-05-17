@@ -294,6 +294,57 @@ const clearPasswordResetOtpFields = {
   passwordResetOtpAttempts: "",
 };
 
+const findUserWithPasswordResetOtp = (usernameOrEmail) =>
+  findUserByLogin(usernameOrEmail)
+    .select(
+      "+passwordResetOtpHash +passwordResetOtpSalt +passwordResetOtpExpiresAt +passwordResetOtpAttempts"
+    )
+    .lean();
+
+const validatePasswordResetOtp = async (user, otp) => {
+  if (!user) {
+    return { ok: false, status: 404, message: "User was not found" };
+  }
+  if (!user.passwordResetOtpHash || !user.passwordResetOtpExpiresAt) {
+    return { ok: false, status: 400, message: "Request a new OTP first" };
+  }
+  if (new Date(user.passwordResetOtpExpiresAt).getTime() < Date.now()) {
+    await User.updateOne(
+      { _id: user._id },
+      { $unset: clearPasswordResetOtpFields }
+    );
+    return { ok: false, status: 400, message: "OTP expired. Request a new OTP." };
+  }
+  if (
+    verifyHashedSecret(
+      otp,
+      user.passwordResetOtpHash,
+      user.passwordResetOtpSalt
+    )
+  ) {
+    return { ok: true };
+  }
+
+  const attempts = Number(user.passwordResetOtpAttempts || 0) + 1;
+  if (attempts >= PASSWORD_RESET_MAX_ATTEMPTS) {
+    await User.updateOne(
+      { _id: user._id },
+      { $unset: clearPasswordResetOtpFields }
+    );
+    return {
+      ok: false,
+      status: 400,
+      message: "Too many invalid OTP attempts. Request a new OTP.",
+    };
+  }
+
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { passwordResetOtpAttempts: attempts } }
+  );
+  return { ok: false, status: 400, message: "Invalid OTP code" };
+};
+
 const createMailTransport = () => {
   const { host, port, secure, user, pass } = getEmailConfig();
   if (!user) {
@@ -654,6 +705,32 @@ app.post("/api/password-reset/request", async (req, res, next) => {
   }
 });
 
+app.post("/api/password-reset/verify", async (req, res, next) => {
+  try {
+    const usernameOrEmail = String(req.body.usernameOrEmail || "").trim();
+    const otp = String(req.body.otp || "").trim();
+
+    if (!usernameOrEmail || !otp) {
+      return res.status(400).json({ message: "Gmail and OTP are required" });
+    }
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({ message: "OTP must be 6 digits" });
+    }
+
+    const user = await findUserWithPasswordResetOtp(usernameOrEmail);
+    const otpValidation = await validatePasswordResetOtp(user, otp);
+    if (!otpValidation.ok) {
+      return res
+        .status(otpValidation.status)
+        .json({ message: otpValidation.message });
+    }
+
+    res.json({ message: "OTP verified successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post("/api/password-reset/confirm", async (req, res, next) => {
   try {
     const usernameOrEmail = String(req.body.usernameOrEmail || "").trim();
@@ -670,47 +747,12 @@ app.post("/api/password-reset/confirm", async (req, res, next) => {
       return res.status(400).json({ message: "Password must be at least 4 characters" });
     }
 
-    const user = await findUserByLogin(usernameOrEmail)
-      .select(
-        "+passwordResetOtpHash +passwordResetOtpSalt +passwordResetOtpExpiresAt +passwordResetOtpAttempts"
-      )
-      .lean();
-    if (!user) {
-      return res.status(404).json({ message: "User was not found" });
-    }
-    if (!user.passwordResetOtpHash || !user.passwordResetOtpExpiresAt) {
-      return res.status(400).json({ message: "Request a new OTP first" });
-    }
-    if (new Date(user.passwordResetOtpExpiresAt).getTime() < Date.now()) {
-      await User.updateOne(
-        { _id: user._id },
-        { $unset: clearPasswordResetOtpFields }
-      );
-      return res.status(400).json({ message: "OTP expired. Request a new OTP." });
-    }
-    if (
-      !verifyHashedSecret(
-        otp,
-        user.passwordResetOtpHash,
-        user.passwordResetOtpSalt
-      )
-    ) {
-      const attempts = Number(user.passwordResetOtpAttempts || 0) + 1;
-      if (attempts >= PASSWORD_RESET_MAX_ATTEMPTS) {
-        await User.updateOne(
-          { _id: user._id },
-          { $unset: clearPasswordResetOtpFields }
-        );
-        return res.status(400).json({
-          message: "Too many invalid OTP attempts. Request a new OTP.",
-        });
-      }
-
-      await User.updateOne(
-        { _id: user._id },
-        { $set: { passwordResetOtpAttempts: attempts } }
-      );
-      return res.status(400).json({ message: "Invalid OTP code" });
+    const user = await findUserWithPasswordResetOtp(usernameOrEmail);
+    const otpValidation = await validatePasswordResetOtp(user, otp);
+    if (!otpValidation.ok) {
+      return res
+        .status(otpValidation.status)
+        .json({ message: otpValidation.message });
     }
 
     await User.updateOne(

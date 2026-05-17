@@ -845,6 +845,34 @@ export default function App() {
     }
   };
 
+  const handleVerifyPasswordResetOtp = async () => {
+    const usernameOrEmail = resetEmailInput.trim();
+    const otp = resetOtpInput.trim();
+
+    if (!usernameOrEmail) {
+      setResetStep(1);
+      setLoginError("Gmail ayaa loo baahan yahay.");
+      return;
+    }
+    if (otp.length !== 6) {
+      setLoginError("Geli 6-da lambar ee OTP-ga.");
+      return;
+    }
+
+    setIsResetBusy(true);
+    setLoginError("");
+    try {
+      await api.verifyPasswordResetOtp(usernameOrEmail, otp);
+      setResetStep(3);
+      setPasswordResetMessage("OTP waa sax. Geli password cusub.");
+    } catch (error) {
+      setResetStep(2);
+      setLoginError(error.message || "OTP khaldan.");
+    } finally {
+      setIsResetBusy(false);
+    }
+  };
+
   const handleOtpBoxChange = (index, value) => {
     const cleanValue = value.replace(/\D/g, "");
     const nextOtp = resetOtpInput.padEnd(6, "").split("");
@@ -858,20 +886,14 @@ export default function App() {
           nextOtp[digitIndex] = digit;
         });
       setResetOtpInput(pastedValue);
-      if (pastedValue.length === 6) {
-        setResetStep(3);
-        setLoginError("");
-      }
+      setLoginError("");
       return;
     }
 
     nextOtp[index] = cleanValue;
     const nextValue = nextOtp.join("").slice(0, 6);
     setResetOtpInput(nextValue);
-    if (nextValue.length === 6) {
-      setResetStep(3);
-      setLoginError("");
-    }
+    setLoginError("");
 
     if (cleanValue && index < 5) {
       document.getElementById(`reset-otp-${index + 1}`)?.focus();
@@ -1508,12 +1530,7 @@ export default function App() {
                   if (resetStep === 1) {
                     handleRequestPasswordReset();
                   } else if (resetStep === 2) {
-                    if (resetOtpInput.trim().length !== 6) {
-                      setLoginError("Geli 6-da lambar ee OTP-ga.");
-                    } else {
-                      setResetStep(3);
-                      setLoginError("");
-                    }
+                    handleVerifyPasswordResetOtp();
                   } else {
                     handleConfirmPasswordReset();
                   }
