@@ -581,7 +581,7 @@ app.post("/api/login", async (req, res, next) => {
   try {
     const username = String(req.body.username || "").trim();
     const password = String(req.body.password || "");
-    const user = await User.findOne({ username }).select("+password").lean();
+    const user = await findUserByLogin(username).select("+password").lean();
 
     if (!verifyPassword(password, user)) {
       return res.status(401).json({ message: "Invalid username or password" });

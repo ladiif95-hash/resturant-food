@@ -147,6 +147,7 @@ export default function App() {
   const [isResetMode, setIsResetMode] = useState(false);
   const [isResetOtpSent, setIsResetOtpSent] = useState(false);
   const [isResetBusy, setIsResetBusy] = useState(false);
+  const [resetStep, setResetStep] = useState(1);
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState("dashboard");
   const [discount, setDiscount] = useState(0);
@@ -731,6 +732,7 @@ export default function App() {
     e.preventDefault();
     const cleanUsername = usernameInput.trim();
     let foundUser = null;
+    setPasswordResetMessage("");
 
     try {
       foundUser = await api.login(cleanUsername, passwordInput);
@@ -757,6 +759,7 @@ export default function App() {
   const handleStartPasswordReset = () => {
     setIsResetMode(true);
     setIsResetOtpSent(false);
+    setResetStep(1);
     setResetEmailInput("");
     setResetOtpInput("");
     setResetPasswordInput("");
@@ -778,6 +781,7 @@ export default function App() {
       await api.requestPasswordReset(usernameOrEmail);
       setIsResetMode(true);
       setIsResetOtpSent(true);
+      setResetStep(2);
       setResetOtpInput("");
       setPasswordResetMessage("Gmail waa sax, OTP ayaa laguu soo diray.");
     } catch (error) {
@@ -794,8 +798,19 @@ export default function App() {
 
   const handleConfirmPasswordReset = async () => {
     const usernameOrEmail = resetEmailInput.trim();
-    if (!usernameOrEmail || !resetOtpInput.trim() || !resetPasswordInput.trim()) {
-      setLoginError("Gmail, OTP, iyo password cusub ayaa loo baahan yahay.");
+    if (!usernameOrEmail) {
+      setResetStep(1);
+      setLoginError("Gmail ayaa loo baahan yahay.");
+      return;
+    }
+    if (resetOtpInput.trim().length !== 6) {
+      setResetStep(2);
+      setLoginError("Geli 6-da lambar ee OTP-ga.");
+      return;
+    }
+    if (!resetPasswordInput.trim()) {
+      setResetStep(3);
+      setLoginError("Geli password cusub.");
       return;
     }
 
@@ -810,6 +825,8 @@ export default function App() {
       setPasswordResetMessage(result.message || "Password reset successfully.");
       setIsResetMode(false);
       setIsResetOtpSent(false);
+      setResetStep(1);
+      setUsernameInput(usernameOrEmail);
       setResetEmailInput("");
       setResetOtpInput("");
       setResetPasswordInput("");
@@ -826,18 +843,28 @@ export default function App() {
     const nextOtp = resetOtpInput.padEnd(6, "").split("");
 
     if (cleanValue.length > 1) {
+      const pastedValue = cleanValue.slice(0, 6);
       cleanValue
         .slice(0, 6)
         .split("")
         .forEach((digit, digitIndex) => {
           nextOtp[digitIndex] = digit;
         });
-      setResetOtpInput(nextOtp.join("").slice(0, 6));
+      setResetOtpInput(pastedValue);
+      if (pastedValue.length === 6) {
+        setResetStep(3);
+        setLoginError("");
+      }
       return;
     }
 
     nextOtp[index] = cleanValue;
-    setResetOtpInput(nextOtp.join("").slice(0, 6));
+    const nextValue = nextOtp.join("").slice(0, 6);
+    setResetOtpInput(nextValue);
+    if (nextValue.length === 6) {
+      setResetStep(3);
+      setLoginError("");
+    }
 
     if (cleanValue && index < 5) {
       document.getElementById(`reset-otp-${index + 1}`)?.focus();
@@ -1471,10 +1498,17 @@ export default function App() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (isResetMode) {
-                  if (isResetOtpSent) {
-                    handleConfirmPasswordReset();
-                  } else {
+                  if (resetStep === 1) {
                     handleRequestPasswordReset();
+                  } else if (resetStep === 2) {
+                    if (resetOtpInput.trim().length !== 6) {
+                      setLoginError("Geli 6-da lambar ee OTP-ga.");
+                    } else {
+                      setResetStep(3);
+                      setLoginError("");
+                    }
+                  } else {
+                    handleConfirmPasswordReset();
                   }
                   return;
                 }
@@ -1490,10 +1524,35 @@ export default function App() {
               <h2>Welcome Back</h2>
               <p className="login-subtitle">
                 {isResetMode
-                  ? "Enter your Gmail to receive a secure OTP code."
+                  ? resetStep === 1
+                    ? "Enter your email to receive an OTP"
+                    : resetStep === 2
+                      ? "Write the OTP code from your Gmail"
+                      : "Create your new password"
                   : "Login to manage orders, menu, and settings."}
               </p>
-              <div className="login-divider" aria-hidden="true" />
+              {isResetMode ? (
+                <div className="reset-stepper" aria-label="Password reset steps">
+                  {[1, 2, 3].map((step) => (
+                    <React.Fragment key={step}>
+                      <span
+                        className={`reset-step ${resetStep >= step ? "active" : ""}`}
+                      >
+                        {step}
+                      </span>
+                      {step < 3 && (
+                        <span
+                          className={`reset-step-line ${
+                            resetStep > step ? "active" : ""
+                          }`}
+                        />
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              ) : (
+                <div className="login-divider" aria-hidden="true" />
+              )}
               {!isResetMode ? (
                 <>
                   <input
@@ -1520,13 +1579,14 @@ export default function App() {
                     onChange={(e) => {
                       setResetEmailInput(e.target.value);
                       setIsResetOtpSent(false);
+                      setResetStep(1);
                       setResetOtpInput("");
                       setResetPasswordInput("");
                       setPasswordResetMessage("");
                     }}
                     autoComplete="email"
                   />
-                  {isResetOtpSent && (
+                  {isResetOtpSent && resetStep === 2 && (
                     <div
                       className="login-otp-group"
                       aria-label="Geli OTP-ga Gmail-kaaga laguu soo diray"
@@ -1552,7 +1612,7 @@ export default function App() {
                     placeholder="Geli password cusub"
                     value={resetPasswordInput}
                     onChange={(e) => setResetPasswordInput(e.target.value)}
-                    hidden={!isResetOtpSent}
+                    hidden={!isResetOtpSent || resetStep !== 3}
                   />
                 </>
               )}
@@ -1580,6 +1640,7 @@ export default function App() {
                     onClick={() => {
                       setIsResetMode(false);
                       setIsResetOtpSent(false);
+                      setResetStep(1);
                       setResetEmailInput("");
                       setResetOtpInput("");
                       setResetPasswordInput("");
@@ -1598,7 +1659,11 @@ export default function App() {
                   className="pay-btn login-submit"
                   disabled={isResetBusy}
                 >
-                  {isResetOtpSent ? "Reset Password" : "Send OTP"}
+                  {resetStep === 1
+                    ? "Send OTP"
+                    : resetStep === 2
+                      ? "Continue"
+                      : "Change Password"}
                 </button>
               ) : (
                 <button type="submit" className="pay-btn login-submit">

@@ -1526,6 +1526,36 @@ textarea {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 0 8px #ffffff;
 }
+.reset-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0 26px;
+}
+.reset-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 800;
+}
+.reset-step.active {
+  background: #0f766e;
+  color: #ffffff;
+}
+.reset-step-line {
+  width: 78px;
+  height: 5px;
+  background: #e5e7eb;
+}
+.reset-step-line.active {
+  background: #9bd8c9;
+}
 .login-input {
   height: 52px;
   margin-bottom: 14px;
