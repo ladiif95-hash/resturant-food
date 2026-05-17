@@ -2,11 +2,34 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5050;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/taban_food";
+const PASSWORD_RESET_OTP_MINUTES = 10;
+const PASSWORD_RESET_MAX_ATTEMPTS = 5;
+const PASSWORD_RESET_RATE_LIMIT_WINDOW_MS =
+  Number(process.env.OTP_RATE_LIMIT_WINDOW_SECONDS || 60) * 1000;
+const PASSWORD_RESET_RATE_LIMIT_MAX = Number(process.env.OTP_RATE_LIMIT_MAX || 20);
+const passwordResetRateLimit = new Map();
+
+const getEmailConfig = () => {
+  const user = process.env.EMAIL_USER || process.env.SMTP_USER;
+  const pass = process.env.EMAIL_PASS || process.env.SMTP_PASS;
+  return {
+    host: process.env.EMAIL_HOST || process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465),
+    secure: String(process.env.EMAIL_SECURE || process.env.SMTP_SECURE || "true") !== "false",
+    user,
+    pass,
+    from:
+      process.env.EMAIL_FROM ||
+      process.env.SMTP_FROM ||
+      (user ? `Taban Food <${user}>` : ""),
+  };
+};
 
 const redactMongoUri = (uri) => uri.replace(/\/\/([^:]+):([^@]+)@/, "//$1:***@");
 
@@ -122,6 +145,10 @@ const userSchema = new mongoose.Schema(
     password: { type: String, default: "", select: false },
     passwordHash: { type: String, default: "" },
     passwordSalt: { type: String, default: "" },
+    passwordResetOtpHash: { type: String, default: "", select: false },
+    passwordResetOtpSalt: { type: String, default: "", select: false },
+    passwordResetOtpExpiresAt: { type: Date, default: null, select: false },
+    passwordResetOtpAttempts: { type: Number, default: 0, select: false },
     role: { type: String, enum: ["admin", "user"], default: "user" },
     avatar: { type: String, default: "" },
     email: { type: String, default: "" },
@@ -147,6 +174,7 @@ const orderSchema = new mongoose.Schema(
     id: { type: Number, required: true, unique: true },
     items: { type: Array, default: [] },
     total: { type: Number, default: 0 },
+    deliveryFee: { type: Number, default: 0 },
     date: { type: String, default: "" },
     createdBy: { type: String, default: "" },
     deliveryType: { type: String, default: "pickup" },
@@ -206,6 +234,112 @@ const verifyPassword = (password, user) => {
   }
 
   return Boolean(user.password) && user.password === password;
+};
+
+const verifyHashedSecret = (secret, hash, salt) => {
+  if (!secret || !hash || !salt) return false;
+  const attempted = hashPassword(secret, salt).passwordHash;
+  const storedBuffer = Buffer.from(hash, "hex");
+  const attemptedBuffer = Buffer.from(attempted, "hex");
+  return (
+    storedBuffer.length === attemptedBuffer.length &&
+    crypto.timingSafeEqual(storedBuffer, attemptedBuffer)
+  );
+};
+
+const maskEmail = (email = "") => {
+  const [name, domain] = String(email).split("@");
+  if (!name || !domain) return email;
+  const visible = name.slice(0, Math.min(2, name.length));
+  return `${visible}${"*".repeat(Math.max(name.length - visible.length, 3))}@${domain}`;
+};
+
+const findUserByLogin = (value) => {
+  const identifier = String(value || "").trim();
+  return User.findOne({
+    $or: [{ username: identifier }, { email: identifier }],
+  });
+};
+
+const checkPasswordResetRateLimit = (identifier, ip) => {
+  const key = `${String(identifier || "").trim().toLowerCase()}|${ip || ""}`;
+  const now = Date.now();
+  const existing = passwordResetRateLimit.get(key);
+
+  if (!existing || existing.resetAt <= now) {
+    passwordResetRateLimit.set(key, {
+      count: 1,
+      resetAt: now + PASSWORD_RESET_RATE_LIMIT_WINDOW_MS,
+    });
+    return null;
+  }
+
+  if (existing.count >= PASSWORD_RESET_RATE_LIMIT_MAX) {
+    const waitSeconds = Math.ceil((existing.resetAt - now) / 1000);
+    const error = new Error(`Too many OTP requests. Try again in ${waitSeconds} seconds.`);
+    error.statusCode = 429;
+    error.publicMessage = `OTP badan ayaad codsatay. Sug ${waitSeconds} ilbiriqsi kadib mar kale isku day.`;
+    throw error;
+  }
+
+  existing.count += 1;
+  passwordResetRateLimit.set(key, existing);
+  return null;
+};
+
+const clearPasswordResetOtpFields = {
+  passwordResetOtpHash: "",
+  passwordResetOtpSalt: "",
+  passwordResetOtpExpiresAt: "",
+  passwordResetOtpAttempts: "",
+};
+
+const createMailTransport = () => {
+  const { host, port, secure, user, pass } = getEmailConfig();
+  if (!user) {
+    const error = new Error("EMAIL_USER is required to send OTP email.");
+    error.statusCode = 503;
+    error.publicMessage = "EMAIL_USER kuma jiro .env.";
+    throw error;
+  }
+  if (!pass) {
+    const error = new Error("EMAIL_PASS is required to send OTP email.");
+    error.statusCode = 503;
+    error.publicMessage =
+      "EMAIL_PASS kuma jiro .env. Geli Google App Password-ka Gmail-ka.";
+    throw error;
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+  });
+};
+
+const sendPasswordResetOtp = async (user, otp) => {
+  const appName = process.env.APP_NAME || "Taban Food";
+  const emailConfig = getEmailConfig();
+  const transport = createMailTransport();
+  await transport.sendMail({
+    from: emailConfig.from,
+    to: user.email,
+    subject: `Your Code - ${otp}`,
+    text: `Hello\n\nYour code is: ${otp}. Use it to verify your email for ${appName} login.\n\nThis code expires in ${PASSWORD_RESET_OTP_MINUTES} minutes.\n\nIf you didn't request this, simply ignore this message.\n\nYours,\nThe ${appName} Team`,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
+        <p>Hello</p>
+        <p>Your code is: <strong>${otp}</strong>. Use it to verify your email for ${appName} login.</p>
+        <p style="font-size:28px;font-weight:800;letter-spacing:6px;color:#0f766e">${otp}</p>
+        <p>This code expires in ${PASSWORD_RESET_OTP_MINUTES} minutes.</p>
+        <p>If you didn't request this, simply ignore this message.</p>
+        <p>Yours,<br />The ${appName} Team</p>
+      </div>
+    `,
+  });
+
+  return { delivered: true };
 };
 
 const cleanUserPayload = (user = {}) => ({
@@ -328,6 +462,7 @@ async function upsertOrders(orders) {
               id: Number(order.id),
               items: Array.isArray(order.items) ? order.items : [],
               total: Number(order.total) || 0,
+              deliveryFee: Number(order.deliveryFee) || 0,
               date: String(order.date || ""),
               createdBy: String(order.createdBy || ""),
               deliveryType: String(order.deliveryType || "pickup"),
@@ -461,6 +596,135 @@ app.post("/api/login", async (req, res, next) => {
     }
 
     res.json(publicUser(user));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/password-reset/request", async (req, res, next) => {
+  try {
+    const usernameOrEmail = String(req.body.usernameOrEmail || "").trim();
+    if (!usernameOrEmail) {
+      return res.status(400).json({ message: "Username or email is required" });
+    }
+    checkPasswordResetRateLimit(usernameOrEmail, req.ip);
+
+    const user = await findUserByLogin(usernameOrEmail).lean();
+    if (!user) {
+      return res.status(404).json({ message: "User was not found" });
+    }
+    if (!user.email) {
+      return res.status(400).json({ message: "This user does not have an email address" });
+    }
+
+    const otp = String(crypto.randomInt(100000, 1000000));
+    const otpFields = hashPassword(otp);
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          passwordResetOtpHash: otpFields.passwordHash,
+          passwordResetOtpSalt: otpFields.passwordSalt,
+          passwordResetOtpExpiresAt: new Date(
+            Date.now() + PASSWORD_RESET_OTP_MINUTES * 60 * 1000
+          ),
+          passwordResetOtpAttempts: 0,
+        },
+      }
+    );
+
+    try {
+      await sendPasswordResetOtp(user, otp);
+    } catch (error) {
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $unset: clearPasswordResetOtpFields,
+        }
+      );
+      throw error;
+    }
+
+    res.json({
+      message: `OTP sent to ${maskEmail(user.email)}`,
+      email: maskEmail(user.email),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/password-reset/confirm", async (req, res, next) => {
+  try {
+    const usernameOrEmail = String(req.body.usernameOrEmail || "").trim();
+    const otp = String(req.body.otp || "").trim();
+    const password = String(req.body.password || "").trim();
+
+    if (!usernameOrEmail || !otp || !password) {
+      return res.status(400).json({ message: "Username, OTP, and new password are required" });
+    }
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({ message: "OTP must be 6 digits" });
+    }
+    if (password.length < 4) {
+      return res.status(400).json({ message: "Password must be at least 4 characters" });
+    }
+
+    const user = await findUserByLogin(usernameOrEmail)
+      .select(
+        "+passwordResetOtpHash +passwordResetOtpSalt +passwordResetOtpExpiresAt +passwordResetOtpAttempts"
+      )
+      .lean();
+    if (!user) {
+      return res.status(404).json({ message: "User was not found" });
+    }
+    if (!user.passwordResetOtpHash || !user.passwordResetOtpExpiresAt) {
+      return res.status(400).json({ message: "Request a new OTP first" });
+    }
+    if (new Date(user.passwordResetOtpExpiresAt).getTime() < Date.now()) {
+      await User.updateOne(
+        { _id: user._id },
+        { $unset: clearPasswordResetOtpFields }
+      );
+      return res.status(400).json({ message: "OTP expired. Request a new OTP." });
+    }
+    if (
+      !verifyHashedSecret(
+        otp,
+        user.passwordResetOtpHash,
+        user.passwordResetOtpSalt
+      )
+    ) {
+      const attempts = Number(user.passwordResetOtpAttempts || 0) + 1;
+      if (attempts >= PASSWORD_RESET_MAX_ATTEMPTS) {
+        await User.updateOne(
+          { _id: user._id },
+          { $unset: clearPasswordResetOtpFields }
+        );
+        return res.status(400).json({
+          message: "Too many invalid OTP attempts. Request a new OTP.",
+        });
+      }
+
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { passwordResetOtpAttempts: attempts } }
+      );
+      return res.status(400).json({ message: "Invalid OTP code" });
+    }
+
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: hashPassword(password),
+        $unset: {
+          password: "",
+          ...clearPasswordResetOtpFields,
+        },
+      }
+    );
+
+    res.json({ message: "Password reset successfully" });
   } catch (error) {
     next(error);
   }
@@ -682,7 +946,9 @@ app.put("/api/settings/:key", async (req, res, next) => {
 app.use((error, req, res, next) => {
   console.error(error);
   res.status(error.statusCode || 500).json({
-    message: error.statusCode === 503 ? "Database connection failed" : "Server error",
+    message:
+      error.publicMessage ||
+      (error.statusCode === 503 ? "Service unavailable" : "Server error"),
     details: error.message,
   });
 });

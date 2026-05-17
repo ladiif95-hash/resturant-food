@@ -23,6 +23,7 @@ export default function Menu({
   deliveryNeighborhood,
   MOGADISHU_DISTRICTS,
   taxAmount,
+  deliveryCharge,
   maxDiscount,
   discount,
   setDiscount,
@@ -84,7 +85,7 @@ export default function Menu({
                   alt={item.name}
                   onError={(e) => {
                     e.currentTarget.onerror = null;
-                    e.currentTarget.src = `${process.env.PUBLIC_URL}/images/placeholder.png`;
+                    e.currentTarget.src = "/images/placeholder.png";
                   }}
                 />
                 <h3>{item.name}</h3>
@@ -208,6 +209,11 @@ export default function Menu({
             <div className="total-row">
               TAX ($0.05/item): <span>${taxAmount.toFixed(2)}</span>
             </div>
+            {deliveryType === "delivery" && (
+              <div className="total-row">
+                DELIVERY FEE: <span>${deliveryCharge.toFixed(2)}</span>
+              </div>
+            )}
             <div className="total-row">
               DISCOUNT: <input type="number" min="0" max={maxDiscount.toFixed(2)} step="0.01" className="discount-input" value={discount} onChange={(e) => setDiscount(Math.min(Math.max(Number(e.target.value) || 0, 0), maxDiscount))}/>
             </div>

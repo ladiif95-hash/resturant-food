@@ -2125,6 +2125,9 @@ select.settings-input {
 }
 
 @media (max-width: 768px) {
+  .app-shell.page-settings .main-layout {
+    padding-top: 162px;
+  }
   .settings-page,
   .settings-shell,
   .settings-content,
@@ -2140,6 +2143,23 @@ select.settings-input {
   .settings-shell {
     padding: 10px;
     border-radius: 10px;
+    overflow: hidden;
+  }
+  .settings-page {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .settings-workspace,
+  .settings-workspace-single,
+  .settings-grid {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .settings-content {
+    padding: 10px;
+    overflow: hidden;
   }
   .settings-topbar,
   .settings-content-head,
@@ -2161,6 +2181,16 @@ select.settings-input {
     flex-wrap: nowrap;
     justify-content: flex-start;
     -webkit-overflow-scrolling: touch;
+  }
+  .settings-submenu {
+    padding-bottom: 4px;
+  }
+  .settings-submenu-btn {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 900;
   }
   .settings-content .settings-form-grid,
   .restaurant-info-card .settings-form-grid,

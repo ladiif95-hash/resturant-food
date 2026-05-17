@@ -1429,28 +1429,198 @@ textarea {
   opacity: 0;
   animation: fadeInOut 2.5s forwards;
 }
+.login-container {
+  padding-top: 0;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(15, 118, 110, 0.08) 1px, transparent 0) 0 0 / 18px 18px,
+    linear-gradient(135deg, #f7fffb 0%, #f3fbf9 48%, #eef7f5 100%);
+}
 .login-wrap {
-  min-height: calc(100vh - 90px);
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
 }
+.login-panel {
+  width: min(460px, 100%);
+  display: block;
+  overflow: hidden;
+  border: 1px solid #bee7dc;
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 118, 110, 0.1);
+}
+.login-brand-panel {
+  min-height: 560px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: #fffaf0;
+}
+.login-logo {
+  width: 118px;
+  height: 118px;
+  object-fit: contain;
+  padding: 10px;
+  margin: 0 auto 28px;
+  border: 2px solid #bee7dc;
+  border-radius: 24px;
+  background: #f6fffb;
+  display: block;
+}
 .login-card {
   width: 100%;
-  max-width: 420px;
-  background: white;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  max-width: none;
+  background: #ffffff;
+  padding: 42px 38px 34px;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.login-card-centered {
+  text-align: center;
 }
 .login-card h2 {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 34px;
+  line-height: 1.1;
+}
+.login-eyebrow {
+  margin-bottom: 10px;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.login-subtitle {
+  margin-bottom: 24px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+.login-divider {
+  position: relative;
+  height: 1px;
+  margin: 8px 0 26px;
+  background: #d7eee8;
+}
+.login-divider::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #9bd8c9;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 8px #ffffff;
+}
+.login-input {
+  height: 52px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  border-color: #bee7dc;
+  background: #f7fffb;
+  padding-left: 22px;
+  font-size: 15px;
+}
+.login-otp-group {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.login-otp-box {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 48px;
+  border: 1px solid #9bd8c9;
+  border-radius: 8px;
+  background: #eef7ff;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+}
+.login-otp-box:focus {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+}
+.login-submit {
+  margin-top: 20px;
+  min-height: 56px;
+  border-radius: 14px;
+  background: #0f766e;
+  box-shadow: 0 10px 18px rgba(15, 118, 110, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.login-link-btn {
+  align-self: flex-end;
+  border: 0;
+  background: transparent;
+  color: #0f766e;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.login-link-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.login-link-btn.muted {
+  color: #64748b;
+}
+.login-reset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.login-contact {
+  margin-top: 18px;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 700;
+}
+.login-contact span {
+  color: #0f766e;
+}
+.login-footer-copy {
+  margin-top: 22px;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+.login-footer-copy span {
+  color: #b5c7c3;
+  letter-spacing: 0.8px;
 }
 .login-error {
   color: #dc2626;
   margin-bottom: 8px;
   font-size: 14px;
+  font-weight: 700;
+}
+.login-success {
+  color: #0f766e;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 800;
 }
 .login-help {
   margin-top: 10px;
@@ -1767,6 +1937,103 @@ textarea {
   .orders-money-table {
     min-width: 560px;
   }
+  .orders-money-page .money-section-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+  }
+  .orders-money-page .money-section-header h3 {
+    font-size: 13px;
+    line-height: 1.25;
+  }
+  .orders-money-table-wrap {
+    overflow: visible;
+  }
+  .orders-money-table {
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .orders-money-table thead {
+    display: none;
+  }
+  .orders-money-table,
+  .orders-money-table tbody,
+  .orders-money-table tr,
+  .orders-money-table td {
+    display: block;
+    width: 100%;
+  }
+  .orders-money-table tbody {
+    padding: 8px;
+  }
+  .orders-money-table tbody tr {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+  .orders-money-table tbody tr + tr {
+    margin-top: 8px;
+  }
+  .orders-money-table td {
+    display: grid;
+    grid-template-columns: minmax(96px, 42%) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-bottom: 1px solid #edf0f5;
+    font-size: 13px;
+  }
+  .orders-money-table td::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .orders-money-table td:last-child {
+    border-bottom: none;
+  }
+  .orders-money-user {
+    gap: 8px;
+    min-width: 0;
+  }
+  .orders-money-user strong,
+  .orders-money-user small {
+    overflow-wrap: anywhere;
+  }
+  .orders-money-user strong {
+    font-size: 14px;
+  }
+  .orders-money-user small {
+    font-size: 11px;
+  }
+  .orders-money-detail-btn {
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+  .orders-money-detail-row {
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .orders-money-detail-row td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .orders-money-detail-row td::before {
+    content: none;
+  }
+  .orders-money-detail-row .money-inline-detail {
+    padding: 10px 0 0;
+  }
+  .orders-money-detail-row .saved-order {
+    margin: 8px 0 0;
+  }
   .orders-toolbar,
   .money-filter-grid,
   .money-meta {
@@ -1800,6 +2067,34 @@ textarea {
   .receipt-modal-card,
   .login-card {
     max-width: 100%;
+  }
+  .login-panel {
+    max-width: 420px;
+    max-height: calc(100dvh - 28px);
+    overflow: hidden;
+  }
+  .login-logo {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 18px;
+  }
+  .login-card {
+    padding: 28px 24px 24px;
+  }
+  .login-card h2 {
+    font-size: 30px;
+    margin-bottom: 6px;
+  }
+  .login-subtitle {
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+  .login-input {
+    height: 48px;
+    margin-bottom: 11px;
+  }
+  .login-submit {
+    min-height: 50px;
   }
   .profile-popup-top h3,
   .receipt-modal-head h3 {
@@ -1850,6 +2145,53 @@ textarea {
   .chart-row {
     grid-template-columns: 68px 1fr 22px;
     gap: 6px;
+  }
+  .login-wrap {
+    padding: 10px;
+  }
+  .login-panel {
+    border-radius: 16px;
+    max-height: calc(100dvh - 20px);
+  }
+  .login-logo {
+    width: 88px;
+    height: 88px;
+    margin-bottom: 14px;
+    border-radius: 20px;
+  }
+  .login-card {
+    padding: 22px 16px 18px;
+  }
+  .login-eyebrow {
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+  .login-card h2 {
+    font-size: 26px;
+    margin-bottom: 5px;
+  }
+  .login-subtitle {
+    margin-bottom: 12px;
+    font-size: 12px;
+  }
+  .login-input {
+    height: 44px;
+    margin-bottom: 9px;
+  }
+  .login-submit {
+    min-height: 46px;
+    margin-top: 14px;
+  }
+  .login-divider {
+    margin: 6px 0 18px;
+  }
+  .login-contact {
+    margin-top: 14px;
+  }
+  .login-footer-copy {
+    margin-top: 16px;
+    font-size: 11px;
+    letter-spacing: 1.2px;
   }
 }
 @media print {

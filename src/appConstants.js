@@ -55,67 +55,69 @@ export const DEFAULT_DELIVERY_SETTINGS = {
   deliveryAreas: [...MOGADISHU_DISTRICTS],
 };
 
+const publicImage = (fileName) => `/images/${fileName}`;
+
 export const MENU = {
   all: [
     {
       id: 1,
       name: "Burger",
       price: 8,
-      image: `${process.env.PUBLIC_URL}/images/burger.png`,
+      image: publicImage("burger.png"),
     },
     {
       id: 2,
       name: "Pizza",
       price: 9,
-      image: `${process.env.PUBLIC_URL}/images/pizza.png`,
+      image: publicImage("pizza.png"),
     },
     {
       id: 3,
       name: "Fries",
       price: 3,
-      image: `${process.env.PUBLIC_URL}/images/fries.png`,
+      image: publicImage("fries.png"),
     },
     {
       id: 4,
       name: "Milk Shake",
       price: 4,
-      image: `${process.env.PUBLIC_URL}/images/milk shake.png`,
+      image: publicImage("milk shake.png"),
     },
     {
       id: 5,
       name: "Coca Cola",
       price: 2,
-      image: `${process.env.PUBLIC_URL}/images/cocola.png`,
+      image: publicImage("cocola.png"),
     },
     {
       id: 6,
       name: "Mango Juice",
       price: 3,
-      image: `${process.env.PUBLIC_URL}/images/mango.png`,
+      image: publicImage("mango.png"),
     },
     {
       id: 7,
       name: "Bariis iyo Hilib",
       price: 10,
-      image: `${process.env.PUBLIC_URL}/images/bariis iyo hilib.png`,
+      image: publicImage("bariis iyo hilib.png"),
     },
     {
       id: 8,
       name: "Cambuulo",
       price: 7,
-      image: `${process.env.PUBLIC_URL}/images/canbuulo.png`,
+      image: publicImage("canbuulo.png"),
     },
     {
       id: 9,
       name: "Sambuus",
       price: 2,
-      image: `${process.env.PUBLIC_URL}/images/sanbuus.png`,
+      image: publicImage("sanbuus.png"),
     },
     {
       id: 10,
       name: "Subway",
       price: 5,
-      image: `${process.env.PUBLIC_URL}/images/jibsi.png`,
+      image: publicImage("jibsi.png"),
     },
   ],
   fast: [
@@ -123,19 +125,19 @@ export const MENU = {
       id: 1,
       name: "Burger",
       price: 8,
-      image: `${process.env.PUBLIC_URL}/images/burger.png`,
+      image: publicImage("burger.png"),
     },
     {
       id: 2,
       name: "Pizza",
       price: 9,
-      image: `${process.env.PUBLIC_URL}/images/pizza.png`,
+      image: publicImage("pizza.png"),
     },
     {
       id: 3,
       name: "Fries",
       price: 3,
-      image: `${process.env.PUBLIC_URL}/images/fries.png`,
+      image: publicImage("fries.png"),
     },
   ],
   drinks: [
@@ -143,19 +145,19 @@ export const MENU = {
       id: 4,
       name: "Milk Shake",
       price: 4,
-      image: `${process.env.PUBLIC_URL}/images/milk shake.png`,
+      image: publicImage("milk shake.png"),
     },
     {
       id: 5,
       name: "Coca Cola",
       price: 2,
-      image: `${process.env.PUBLIC_URL}/images/cocola.png`,
+      image: publicImage("cocola.png"),
     },
     {
       id: 6,
       name: "Mango Juice",
       price: 3,
-      image: `${process.env.PUBLIC_URL}/images/mango.png`,
+      image: publicImage("mango.png"),
     },
   ],
   normalday: [
@@ -163,25 +165,25 @@ export const MENU = {
       id: 7,
       name: "Bariis iyo Hilib",
       price: 10,
-      image: `${process.env.PUBLIC_URL}/images/bariis iyo hilib.png`,
+      image: publicImage("bariis iyo hilib.png"),
     },
     {
       id: 8,
       name: "Cambuulo",
       price: 7,
-      image: `${process.env.PUBLIC_URL}/images/canbuulo.png`,
+      image: publicImage("canbuulo.png"),
     },
     {
       id: 9,
       name: "Sambuus",
       price: 2,
-      image: `${process.env.PUBLIC_URL}/images/sanbuus.png`,
+      image: publicImage("sanbuus.png"),
     },
     {
       id: 10,
       name: "Subway",
       price: 5,
-      image: `${process.env.PUBLIC_URL}/images/jibsi.png`,
+      image: publicImage("jibsi.png"),
     },
   ],
 };

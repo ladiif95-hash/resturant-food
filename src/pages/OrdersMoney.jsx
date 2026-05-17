@@ -76,8 +76,8 @@ export default function OrdersMoney({
                           return (
                             <React.Fragment key={user.username}>
                               <tr className={isOpen ? "orders-money-row-open" : ""}>
-                                <td>{user.rank}</td>
-                                <td>
+                                <td data-label="User Rank">{user.rank}</td>
+                                <td data-label="User">
                                   <div className="orders-money-user">
                                     <span className="orders-money-avatar">
                                       <FaUserCircle />
@@ -88,12 +88,12 @@ export default function OrdersMoney({
                                     </span>
                                   </div>
                                 </td>
-                                <td>{formatMoney(user.totalOrderAmount)}</td>
-                                <td>{formatMoney(user.totalDiscounted)}</td>
-                                <td className="orders-money-net">
+                                <td data-label="Total Order Amount">{formatMoney(user.totalOrderAmount)}</td>
+                                <td data-label="Total Discounted">{formatMoney(user.totalDiscounted)}</td>
+                                <td data-label="Net Spend" className="orders-money-net">
                                   {formatMoney(user.netSpend || user.total)}
                                 </td>
-                                <td>
+                                <td data-label="Action">
                                   <button
                                     type="button"
                                     className="orders-money-detail-btn"

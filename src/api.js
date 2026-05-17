@@ -1,4 +1,4 @@
-const configuredApiUrl = process.env.REACT_APP_API_URL;
+const configuredApiUrl = import.meta.env.VITE_API_URL;
 const isBrowser = typeof window !== "undefined";
 const isLocalBrowser =
   isBrowser && ["localhost", "127.0.0.1"].includes(window.location.hostname);
@@ -40,6 +40,16 @@ export const api = {
     request("/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
+    }),
+  requestPasswordReset: (usernameOrEmail) =>
+    request("/password-reset/request", {
+      method: "POST",
+      body: JSON.stringify({ usernameOrEmail }),
+    }),
+  confirmPasswordReset: (usernameOrEmail, otp, password) =>
+    request("/password-reset/confirm", {
+      method: "POST",
+      body: JSON.stringify({ usernameOrEmail, otp, password }),
     }),
   migrateLocalStorage: (data) =>
     request("/migrate-local-storage", {

@@ -140,6 +140,13 @@ export default function App() {
   const [usernameInput, setUsernameInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [resetEmailInput, setResetEmailInput] = useState("");
+  const [resetOtpInput, setResetOtpInput] = useState("");
+  const [resetPasswordInput, setResetPasswordInput] = useState("");
+  const [passwordResetMessage, setPasswordResetMessage] = useState("");
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [isResetOtpSent, setIsResetOtpSent] = useState(false);
+  const [isResetBusy, setIsResetBusy] = useState(false);
   const [category, setCategory] = useState("all");
   const [page, setPage] = useState("dashboard");
   const [discount, setDiscount] = useState(0);
@@ -307,9 +314,14 @@ export default function App() {
   const subTotal = orders.reduce((sum, item) => sum + item.price * item.qty, 0);
   const totalQty = orders.reduce((sum, item) => sum + item.qty, 0);
   const taxAmount = totalQty * taxPerItem;
+  const deliveryCharge =
+    deliveryType === "delivery" ? Number(deliverySettings.deliveryFee) || 0 : 0;
   const maxDiscount = subTotal + taxAmount;
   const effectiveDiscount = Math.min(Math.max(discount, 0), maxDiscount);
-  const finalTotal = Math.max(subTotal + taxAmount - effectiveDiscount, 0);
+  const finalTotal = Math.max(
+    subTotal + taxAmount + deliveryCharge - effectiveDiscount,
+    0
+  );
   const visibleSavedOrders = isAdmin
     ? savedOrders
     : savedOrders.filter((order) => order.createdBy === currentUser?.username);
@@ -671,6 +683,7 @@ export default function App() {
       id: Date.now(),
       items: orders,
       total: finalTotal,
+      deliveryFee: deliveryCharge,
       date: new Date().toLocaleString(),
       createdBy: currentUser.username,
       deliveryType,
@@ -722,11 +735,10 @@ export default function App() {
     try {
       foundUser = await api.login(cleanUsername, passwordInput);
     } catch (error) {
-      const backendDetails = error.details ? ` ${error.details}` : "";
       setLoginError(
         error.status === 401
           ? "Invalid username or password."
-          : `Backend/database is not connected.${backendDetails}`
+          : error.message || "Login failed. Please try again."
       );
       return;
     }
@@ -740,6 +752,102 @@ export default function App() {
     setLoginError("");
     setUsernameInput("");
     setPasswordInput("");
+  };
+
+  const handleStartPasswordReset = () => {
+    setIsResetMode(true);
+    setIsResetOtpSent(false);
+    setResetEmailInput("");
+    setResetOtpInput("");
+    setResetPasswordInput("");
+    setLoginError("");
+    setPasswordResetMessage("");
+  };
+
+  const handleRequestPasswordReset = async () => {
+    const usernameOrEmail = resetEmailInput.trim();
+    if (!usernameOrEmail) {
+      setLoginError("Geli Gmail-kaaga marka hore.");
+      return;
+    }
+
+    setIsResetBusy(true);
+    setLoginError("");
+    setPasswordResetMessage("");
+    try {
+      await api.requestPasswordReset(usernameOrEmail);
+      setIsResetMode(true);
+      setIsResetOtpSent(true);
+      setResetOtpInput("");
+      setPasswordResetMessage("Gmail waa sax, OTP ayaa laguu soo diray.");
+    } catch (error) {
+      setIsResetOtpSent(false);
+      setLoginError(
+        error.status === 404
+          ? "Gmail-kan kama jiro system-ka."
+          : error.message || "OTP lama diri karin. Fadlan mar kale isku day."
+      );
+    } finally {
+      setIsResetBusy(false);
+    }
+  };
+
+  const handleConfirmPasswordReset = async () => {
+    const usernameOrEmail = resetEmailInput.trim();
+    if (!usernameOrEmail || !resetOtpInput.trim() || !resetPasswordInput.trim()) {
+      setLoginError("Gmail, OTP, iyo password cusub ayaa loo baahan yahay.");
+      return;
+    }
+
+    setIsResetBusy(true);
+    setLoginError("");
+    try {
+      const result = await api.confirmPasswordReset(
+        usernameOrEmail,
+        resetOtpInput.trim(),
+        resetPasswordInput
+      );
+      setPasswordResetMessage(result.message || "Password reset successfully.");
+      setIsResetMode(false);
+      setIsResetOtpSent(false);
+      setResetEmailInput("");
+      setResetOtpInput("");
+      setResetPasswordInput("");
+      setPasswordInput("");
+    } catch (error) {
+      setLoginError(error.message || "Password reset failed.");
+    } finally {
+      setIsResetBusy(false);
+    }
+  };
+
+  const handleOtpBoxChange = (index, value) => {
+    const cleanValue = value.replace(/\D/g, "");
+    const nextOtp = resetOtpInput.padEnd(6, "").split("");
+
+    if (cleanValue.length > 1) {
+      cleanValue
+        .slice(0, 6)
+        .split("")
+        .forEach((digit, digitIndex) => {
+          nextOtp[digitIndex] = digit;
+        });
+      setResetOtpInput(nextOtp.join("").slice(0, 6));
+      return;
+    }
+
+    nextOtp[index] = cleanValue;
+    setResetOtpInput(nextOtp.join("").slice(0, 6));
+
+    if (cleanValue && index < 5) {
+      document.getElementById(`reset-otp-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleOtpBoxKeyDown = (index, event) => {
+    if (event.key === "Backspace" && !resetOtpInput[index] && index > 0) {
+      document.getElementById(`reset-otp-${index - 1}`)?.focus();
+    }
   };
 
   const handleLogout = () => {
@@ -1334,7 +1442,12 @@ export default function App() {
     doc.text(`Subtotal: $${subtotal.toFixed(2)}`, margin, y);
     y += 5;
     doc.text(`Tax ($0.05/item): $${tax.toFixed(2)}`, margin, y);
-    y += 6;
+    y += 5;
+    if (isDelivery && Number(order.deliveryFee) > 0) {
+      doc.text(`Delivery fee: $${Number(order.deliveryFee).toFixed(2)}`, margin, y);
+      y += 5;
+    }
+    y += 1;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.text(`GRAND TOTAL: $${order.total.toFixed(2)}`, rightEdge, y, {
@@ -1350,35 +1463,156 @@ export default function App() {
 
   if (!currentUser) {
     return (
-      <div className="container">
-        <header className="main-header">
-          <div className="brand">
-            <span className="taban-text">TABAN</span>
-            <span className="food-text">FOOD</span>
-          </div>
-        </header>
-
+      <div className="container login-container">
         <div className="login-wrap">
-          <form className="login-card" onSubmit={handleLogin}>
-            <h2>Local Login</h2>
-            <input
-              className="search-input"
-              placeholder="Username"
-              value={usernameInput}
-              onChange={(e) => setUsernameInput(e.target.value)}
-            />
-            <input
-              type="password"
-              className="search-input"
-              placeholder="Password"
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-            />
-            {loginError && <p className="login-error">{loginError}</p>}
-            <button type="submit" className="pay-btn">
-              LOGIN
-            </button>
-          </form>
+          <section className="login-panel login-panel-single" aria-label="Taban Food login">
+            <form
+              className="login-card login-card-centered"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (isResetMode) {
+                  if (isResetOtpSent) {
+                    handleConfirmPasswordReset();
+                  } else {
+                    handleRequestPasswordReset();
+                  }
+                  return;
+                }
+                handleLogin(e);
+              }}
+            >
+              <img
+                src="/logo.png/Screenshot%202026-05-17%20102948.png"
+                alt="Taban Food"
+                className="login-logo"
+              />
+              <p className="login-eyebrow">Taban Food</p>
+              <h2>Welcome Back</h2>
+              <p className="login-subtitle">
+                {isResetMode
+                  ? "Enter your Gmail to receive a secure OTP code."
+                  : "Login to manage orders, menu, and settings."}
+              </p>
+              <div className="login-divider" aria-hidden="true" />
+              {!isResetMode ? (
+                <>
+                  <input
+                    className="search-input login-input"
+                    placeholder="Username or Gmail"
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                  />
+                  <input
+                    type="password"
+                    className="search-input login-input"
+                    placeholder="Password"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                  />
+                </>
+              ) : (
+                <>
+                  <input
+                    type="email"
+                    className="search-input login-input"
+                    placeholder="Geli Gmail-kaaga (tusaale@gmail.com)"
+                    value={resetEmailInput}
+                    onChange={(e) => {
+                      setResetEmailInput(e.target.value);
+                      setIsResetOtpSent(false);
+                      setResetOtpInput("");
+                      setResetPasswordInput("");
+                      setPasswordResetMessage("");
+                    }}
+                    autoComplete="email"
+                  />
+                  {isResetOtpSent && (
+                    <div
+                      className="login-otp-group"
+                      aria-label="Geli OTP-ga Gmail-kaaga laguu soo diray"
+                    >
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <input
+                          key={index}
+                          id={`reset-otp-${index}`}
+                          className="login-otp-box"
+                          value={resetOtpInput[index] || ""}
+                          onChange={(e) => handleOtpBoxChange(index, e.target.value)}
+                          onKeyDown={(e) => handleOtpBoxKeyDown(index, e)}
+                          inputMode="numeric"
+                          maxLength={1}
+                          aria-label={`OTP digit ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    type="password"
+                    className="search-input login-input"
+                    placeholder="Geli password cusub"
+                    value={resetPasswordInput}
+                    onChange={(e) => setResetPasswordInput(e.target.value)}
+                    hidden={!isResetOtpSent}
+                  />
+                </>
+              )}
+              {loginError && <p className="login-error">{loginError}</p>}
+              {passwordResetMessage && (
+                <p className="login-success">{passwordResetMessage}</p>
+              )}
+              <div className="login-reset-row">
+                {(!isResetMode || isResetOtpSent) && (
+                  <button
+                    type="button"
+                    className="login-link-btn"
+                    onClick={
+                      isResetMode ? handleRequestPasswordReset : handleStartPasswordReset
+                    }
+                    disabled={isResetBusy}
+                  >
+                    {isResetOtpSent ? "Resend OTP" : "Forgot password?"}
+                  </button>
+                )}
+                {isResetMode && (
+                  <button
+                    type="button"
+                    className="login-link-btn muted"
+                    onClick={() => {
+                      setIsResetMode(false);
+                      setIsResetOtpSent(false);
+                      setResetEmailInput("");
+                      setResetOtpInput("");
+                      setResetPasswordInput("");
+                      setLoginError("");
+                      setPasswordResetMessage("");
+                    }}
+                    disabled={isResetBusy}
+                  >
+                    Back to login
+                  </button>
+                )}
+              </div>
+              {isResetMode ? (
+                <button
+                  type="submit"
+                  className="pay-btn login-submit"
+                  disabled={isResetBusy}
+                >
+                  {isResetOtpSent ? "Reset Password" : "Send OTP"}
+                </button>
+              ) : (
+                <button type="submit" className="pay-btn login-submit">
+                  Login
+                </button>
+              )}
+              <p className="login-contact">
+                Need help? <a href="mailto:ladiif520@gmail.com">Contact support</a>
+              </p>
+              <p className="login-footer-copy">
+                cunto dhadhan leh <span>- powered by Taban</span>
+              </p>
+            </form>
+          </section>
         </div>
       </div>
     );
@@ -1393,7 +1627,11 @@ export default function App() {
         onBrandClick={() => setPage("pos")}
       />
 
-      <div className={`app-shell sidebar-visible ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+      <div
+        className={`app-shell sidebar-visible page-${String(page).toLowerCase().replace(/\s+/g, "-")} ${
+          isSidebarCollapsed ? "sidebar-collapsed" : ""
+        }`}
+      >
         <Sidebar
           isCollapsed={isSidebarCollapsed}
           onToggle={handleSidebarToggle}
@@ -1456,6 +1694,7 @@ export default function App() {
             deliveryNeighborhood={deliveryNeighborhood}
             MOGADISHU_DISTRICTS={MOGADISHU_DISTRICTS}
             taxAmount={taxAmount}
+            deliveryCharge={deliveryCharge}
             maxDiscount={maxDiscount}
             discount={discount}
             setDiscount={setDiscount}

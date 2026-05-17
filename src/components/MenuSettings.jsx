@@ -16,11 +16,6 @@ const CATEGORY_OPTIONS = [
   { value: "normalday", label: "Normal Food" },
 ];
 
-const CATEGORY_FILTER_OPTIONS = [
-  { value: "all", label: "All Categories" },
-  ...CATEGORY_OPTIONS,
-];
-
 export default function MenuSettings({
   isAdmin,
   menuItems,
@@ -31,7 +26,7 @@ export default function MenuSettings({
   onMenuItemAdd,
 }) {
   const [menuFilter, setMenuFilter] = useState("");
-  const [editCategory, setEditCategory] = useState("all");
+  const [editCategory, setEditCategory] = useState("fast");
   const [newProduct, setNewProduct] = useState({
     name: "",
     category: "fast",
@@ -57,7 +52,7 @@ export default function MenuSettings({
   }, [menuItems]);
 
   const categoryCounts = useMemo(() => {
-    const counts = { all: (menuItems || []).length };
+    const counts = {};
     CATEGORY_OPTIONS.forEach((category) => {
       counts[category.value] = (menuItems || []).filter(
         (item) => item.category === category.value
@@ -68,11 +63,10 @@ export default function MenuSettings({
 
   const filteredItems = useMemo(() => {
     const needle = menuFilter.trim().toLowerCase();
+
     return (menuItems || []).filter((item) => {
-      const matchesCategory =
-        editCategory === "all" || item.category === editCategory;
-      const matchesSearch =
-        !needle || item.name.toLowerCase().includes(needle);
+      const matchesCategory = item.category === editCategory;
+      const matchesSearch = !needle || item.name.toLowerCase().includes(needle);
       return matchesCategory && matchesSearch;
     });
   }, [menuItems, menuFilter, editCategory]);
@@ -119,7 +113,7 @@ export default function MenuSettings({
       imageInputRef.current.value = "";
     }
     setMenuFilter("");
-    setEditCategory("all");
+    setEditCategory("fast");
   };
 
   return (
@@ -287,10 +281,12 @@ export default function MenuSettings({
             <h4>Product Catalog</h4>
             <p>Dooro qeyb, raadi cunto, kadib category/price/stock si degdeg ah u beddel.</p>
           </div>
-          <span>{filteredItems.length} shown</span>
+          <span>
+            {`${filteredItems.length} shown`}
+          </span>
         </div>
         <div className="menu-category-tabs" aria-label="Filter products by category">
-          {CATEGORY_FILTER_OPTIONS.map((category) => (
+          {CATEGORY_OPTIONS.map((category) => (
             <button
               key={category.value}
               type="button"
@@ -332,8 +328,12 @@ export default function MenuSettings({
         {filteredItems.length === 0 ? (
           <div className="menu-settings-empty">
             <FaSearch />
-            <strong>No products found</strong>
-            <p>Try another category or search term.</p>
+            <strong>
+              No products found
+            </strong>
+            <p>
+              Try another category or search term.
+            </p>
           </div>
         ) : (
           filteredItems.map((item) => (

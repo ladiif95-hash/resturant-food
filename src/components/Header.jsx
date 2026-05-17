@@ -76,9 +76,6 @@ export default function Header({ currentUser, onOpenProfile, onLogout, onBrandCl
               </div>
             )}
           </li>
-          <li className="nav-icon-btn" onClick={onLogout} title="Logout" aria-label="Logout">
-            <FaSignOutAlt />
-          </li>
         </ul>
       </nav>
     </header>

@@ -77,6 +77,12 @@ export default function ReceiptModal({
               ITEMS:
               <span>{paidReceiptOrder.items.reduce((sum, item) => sum + item.qty, 0)}</span>
             </div>
+            {paidReceiptOrder.deliveryType === "delivery" && Number(paidReceiptOrder.deliveryFee) > 0 && (
+              <div className="total-row">
+                DELIVERY FEE:
+                <span>${Number(paidReceiptOrder.deliveryFee).toFixed(2)}</span>
+              </div>
+            )}
             <div className="total-row grand-total">
               TOTAL: <span>${paidReceiptOrder.total.toFixed(2)}</span>
             </div>
