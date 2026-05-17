@@ -376,16 +376,21 @@ const sendPasswordResetOtp = async (user, otp) => {
   await transport.sendMail({
     from: emailConfig.from,
     to: user.email,
-    subject: `Your Code - ${otp}`,
-    text: `Hello\n\nYour code is: ${otp}. Use it to verify your email for ${appName} login.\n\nThis code expires in ${PASSWORD_RESET_OTP_MINUTES} minutes.\n\nIf you didn't request this, simply ignore this message.\n\nYours,\nThe ${appName} Team`,
+    subject: `Ku soo dhowaw ${appName}! Koodhkaaga xaqiijinta waa kan`,
+    text: `Macaamilka Sharafta leh,\n\nAad baad uga mahadsan tahay inaad dooratay ${appName}! Aad ayaan ugu faraxsanahay inaad nala soo biirto si aad u hesho cuntada ugu macaan ee magaalada.\n\nSi aad u bilowdo safarkaaga macaan, fadlan isticmaal koodhka hoos ku xusan si aad u xaqiijiso iimaylkaaga:\n\n${otp}\n\nOgeysiis: Koodhkani wuxuu firfircoonaan doonaa muddo ${PASSWORD_RESET_OTP_MINUTES} daqiiqo ah oo kaliya, si loo sugo ammaanka akoonkaaga.\n\nHaddii aadan adigu codsan koodhkan, walwal ha muujin, si ammaan ah ayaad iska indho-tiri kartaa iimaylkan.\n\nCunto macaan iyo maalin wanaagsan!\n\nLeh tixgelin iyo jacayl,\nKooxda ${appName}`,
     html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
-        <p>Hello</p>
-        <p>Your code is: <strong>${otp}</strong>. Use it to verify your email for ${appName} login.</p>
-        <p style="font-size:28px;font-weight:800;letter-spacing:6px;color:#0f766e">${otp}</p>
-        <p>This code expires in ${PASSWORD_RESET_OTP_MINUTES} minutes.</p>
-        <p>If you didn't request this, simply ignore this message.</p>
-        <p>Yours,<br />The ${appName} Team</p>
+      <div style="font-family:Arial,sans-serif;line-height:1.65;color:#0f172a;background:#f0fdfa;padding:24px">
+        <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #b7efe4;border-radius:14px;padding:28px">
+          <h2 style="margin:0 0 16px;color:#0f766e">Ku soo dhowaw ${appName}!</h2>
+          <p>Macaamilka Sharafta leh,</p>
+          <p>Aad baad uga mahadsan tahay inaad dooratay ${appName}! Aad ayaan ugu faraxsanahay inaad nala soo biirto si aad u hesho cuntada ugu macaan ee magaalada.</p>
+          <p>Si aad u bilowdo safarkaaga macaan, fadlan isticmaal koodhka hoos ku xusan si aad u xaqiijiso iimaylkaaga:</p>
+          <p style="margin:22px 0;padding:18px;border-radius:12px;background:#ecfeff;color:#0f766e;font-size:34px;font-weight:900;letter-spacing:8px;text-align:center">${otp}</p>
+          <p><strong>Ogeysiis:</strong> Koodhkani wuxuu firfircoonaan doonaa muddo ${PASSWORD_RESET_OTP_MINUTES} daqiiqo ah oo kaliya, si loo sugo ammaanka akoonkaaga.</p>
+          <p>Haddii aadan adigu codsan koodhkan, walwal ha muujin, si ammaan ah ayaad iska indho-tiri kartaa iimaylkan.</p>
+          <p>Cunto macaan iyo maalin wanaagsan!</p>
+          <p style="margin-bottom:0">Leh tixgelin iyo jacayl,<br /><strong>Kooxda ${appName}</strong></p>
+        </div>
       </div>
     `,
   });
