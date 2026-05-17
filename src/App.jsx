@@ -798,6 +798,7 @@ export default function App() {
 
   const handleConfirmPasswordReset = async () => {
     const usernameOrEmail = resetEmailInput.trim();
+    const nextPassword = resetPasswordInput.trim();
     if (!usernameOrEmail) {
       setResetStep(1);
       setLoginError("Gmail ayaa loo baahan yahay.");
@@ -808,7 +809,7 @@ export default function App() {
       setLoginError("Geli 6-da lambar ee OTP-ga.");
       return;
     }
-    if (!resetPasswordInput.trim()) {
+    if (!nextPassword) {
       setResetStep(3);
       setLoginError("Geli password cusub.");
       return;
@@ -820,8 +821,14 @@ export default function App() {
       const result = await api.confirmPasswordReset(
         usernameOrEmail,
         resetOtpInput.trim(),
-        resetPasswordInput
+        nextPassword
       );
+      try {
+        const loggedInUser = await api.login(usernameOrEmail, nextPassword);
+        setCurrentUser(loggedInUser);
+      } catch {
+        setUsernameInput(usernameOrEmail);
+      }
       setPasswordResetMessage(result.message || "Password reset successfully.");
       setIsResetMode(false);
       setIsResetOtpSent(false);
