@@ -128,16 +128,16 @@ export default function Menu({
               ) : (
                 orders.map((item, index) => (
                   <tr key={item.id}>
-                    <td>{index + 1}</td>
-                    <td>{item.name}</td>
-                    <td>
+                    <td data-label="NO">{index + 1}</td>
+                    <td data-label="ITEM">{item.name}</td>
+                    <td data-label="QTY">
                       <button className="qty-btn" onClick={() => updateQty(item.id, -1)}>-</button>
                       {item.qty}
                       <button className="qty-btn" onClick={() => updateQty(item.id, 1)}>+</button>
                     </td>
-                    <td>${item.price.toFixed(2)}</td>
-                    <td>${(item.price * item.qty).toFixed(2)}</td>
-                    <td>
+                    <td data-label="PRICE">${item.price.toFixed(2)}</td>
+                    <td data-label="TOTAL">${(item.price * item.qty).toFixed(2)}</td>
+                    <td data-label="DELETE">
                       <button className="delete-btn" onClick={() => removeItem(item.id)}>
                         <FaTrash />
                       </button>

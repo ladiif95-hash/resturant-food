@@ -176,10 +176,12 @@ textarea {
 }
 .pos-order-side {
   min-width: 380px;
+  min-height: 0;
 }
 .pos-order-paper {
   border: 1px solid #e2e8f0;
   background: linear-gradient(180deg, #ffffff, #f8fafc);
+  overflow: visible;
 }
 .pos-order-header {
   display: flex;
@@ -206,6 +208,7 @@ textarea {
   max-height: 250px;
   overflow: auto;
   border-radius: 10px;
+  border: 1px solid #eef2f7;
 }
 .pos-items-grid {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -571,6 +574,7 @@ textarea {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 15px;
+  table-layout: fixed;
 }
 .invoice-table th,
 .invoice-table td {
@@ -578,6 +582,30 @@ textarea {
   border-bottom: 1px solid #eee;
   font-size: 13px;
   text-align: center;
+  overflow-wrap: anywhere;
+}
+.invoice-table th:nth-child(1),
+.invoice-table td:nth-child(1) {
+  width: 40px;
+}
+.invoice-table th:nth-child(2),
+.invoice-table td:nth-child(2) {
+  text-align: left;
+  width: 30%;
+}
+.invoice-table th:nth-child(3),
+.invoice-table td:nth-child(3) {
+  width: 96px;
+}
+.invoice-table th:nth-child(4),
+.invoice-table td:nth-child(4),
+.invoice-table th:nth-child(5),
+.invoice-table td:nth-child(5) {
+  width: 78px;
+}
+.invoice-table th:nth-child(6),
+.invoice-table td:nth-child(6) {
+  width: 66px;
 }
 .qty-btn {
   padding: 4px 10px;
@@ -641,16 +669,27 @@ textarea {
   margin-top: 10px;
   border-top: 1px solid #eee;
   padding-top: 10px;
+  width: 100%;
+  overflow: visible;
 }
 .total-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 8px;
   font-size: 14px;
+  min-width: 0;
+}
+.total-row span {
+  flex-shrink: 0;
+  font-weight: 700;
 }
 .grand-total {
   font-weight: bold;
   font-size: 16px;
+  padding-top: 8px;
+  border-top: 1px dashed #d1d5db;
 }
 .discount-input {
   width: 70px;
@@ -1967,6 +2006,82 @@ textarea {
   .orders-money-table {
     min-width: 560px;
   }
+  .pos-order-paper .invoice-table-wrap {
+    max-height: none;
+    overflow: visible;
+    border: 0;
+  }
+  .pos-order-paper .invoice-table {
+    min-width: 0;
+    margin-bottom: 10px;
+  }
+  .pos-order-paper .invoice-table thead {
+    display: none;
+  }
+  .pos-order-paper .invoice-table,
+  .pos-order-paper .invoice-table tbody,
+  .pos-order-paper .invoice-table tr,
+  .pos-order-paper .invoice-table td {
+    display: block;
+    width: 100%;
+  }
+  .pos-order-paper .invoice-table tbody {
+    display: grid;
+    gap: 8px;
+  }
+  .pos-order-paper .invoice-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+  .pos-order-paper .invoice-table td {
+    display: grid;
+    grid-template-columns: minmax(82px, 32%) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #edf0f5;
+    text-align: right;
+    font-size: 13px;
+  }
+  .pos-order-paper .invoice-table td::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    text-align: left;
+  }
+  .pos-order-paper .invoice-table td:last-child {
+    border-bottom: none;
+  }
+  .pos-order-paper .invoice-table td:nth-child(2) {
+    text-align: right;
+  }
+  .pos-order-paper .invoice-table td:nth-child(3) {
+    display: flex;
+    justify-content: space-between;
+  }
+  .pos-order-paper .invoice-table td:nth-child(3)::before {
+    align-self: center;
+  }
+  .pos-order-paper .qty-btn {
+    margin: 0 4px;
+  }
+  .totals-box {
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+  }
+  .total-row {
+    font-size: 13px;
+  }
+  .grand-total {
+    font-size: 15px;
+  }
   .orders-money-page .money-section-header {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -2272,5 +2387,62 @@ textarea {
   .order-detail-table td {
     font-size: 11px;
     padding: 6px;
+  }
+  .pos-menu-side {
+    display: none !important;
+  }
+  .pos-order-side,
+  .pos-order-paper {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+  }
+  .pos-order-paper .invoice-table-wrap {
+    max-height: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+  }
+  .pos-order-paper .invoice-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+  }
+  .pos-order-paper .invoice-table th,
+  .pos-order-paper .invoice-table td {
+    font-size: 11px !important;
+    padding: 6px 4px !important;
+  }
+  .pos-order-paper .invoice-table th:nth-child(6),
+  .pos-order-paper .invoice-table td:nth-child(6),
+  .pos-order-paper .qty-btn,
+  .pos-order-paper .delete-btn,
+  .pos-order-paper .pay-btn {
+    display: none !important;
+  }
+  .pos-order-paper .totals-box {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    width: 100% !important;
+    margin-top: 12px !important;
+    overflow: visible !important;
+    border-top: 1px solid #d1d5db !important;
+  }
+  .pos-order-paper .total-row,
+  .pos-order-paper .grand-total {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    font-size: 12px !important;
+    white-space: normal !important;
+  }
+  .pos-order-paper .grand-total {
+    font-size: 14px !important;
   }
 }

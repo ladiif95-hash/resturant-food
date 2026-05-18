@@ -1473,21 +1473,26 @@ export default function App() {
     y += 5;
 
     doc.setFont("helvetica", "bold");
+    const qtyX = 41;
+    const priceX = 57;
+    const totalX = rightEdge;
+    const itemColumnWidth = 29;
+
     doc.text("Item", margin, y);
-    doc.text("Qty", 47, y);
-    doc.text("Price", 58, y, { align: "right" });
-    doc.text("Total", rightEdge, y, { align: "right" });
+    doc.text("Qty", qtyX, y, { align: "center" });
+    doc.text("Price", priceX, y, { align: "center" });
+    doc.text("Total", totalX, y, { align: "right" });
     y += 3;
     divider(y);
     y += 5;
 
     doc.setFont("helvetica", "normal");
     order.items.forEach((item) => {
-      const itemLines = doc.splitTextToSize(String(item.name || "Item"), 38);
+      const itemLines = doc.splitTextToSize(String(item.name || "Item"), itemColumnWidth);
       doc.text(itemLines, margin, y);
-      doc.text(String(item.qty), 48, y, { align: "center" });
-      doc.text(`$${item.price.toFixed(2)}`, 58, y, { align: "right" });
-      doc.text(`$${(item.price * item.qty).toFixed(2)}`, rightEdge, y, {
+      doc.text(String(item.qty), qtyX, y, { align: "center" });
+      doc.text(`$${item.price.toFixed(2)}`, priceX, y, { align: "center" });
+      doc.text(`$${(item.price * item.qty).toFixed(2)}`, totalX, y, {
         align: "right",
       });
       y += itemLines.length * 4 + 3;
