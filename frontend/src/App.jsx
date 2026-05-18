@@ -1426,60 +1426,73 @@ export default function App() {
     const tax = qtyCount * taxPerItem;
     const isDelivery = order.deliveryType === "delivery";
     const deliveryLocation = getDeliveryLocation(order);
-    const estimateLines = order.items.reduce(
-      (sum, item) => sum + Math.ceil(String(item.name || "").length / 22),
+    const pageWidth = 58;
+    const margin = 3;
+    const rightEdge = pageWidth - margin;
+    const itemColumnWidth = 19;
+    const locationText =
+      isDelivery && deliveryLocation
+        ? `Location: ${deliveryLocation.label}`
+        : "";
+    const estimateTextLines = (text, charsPerLine) =>
+      Math.max(1, Math.ceil(String(text || "").length / charsPerLine));
+    const estimateItemLines = order.items.reduce(
+      (sum, item) => sum + estimateTextLines(item.name || "Item", 15),
       0
     );
-    const receiptHeight = Math.max(
-      95,
-      70 + estimateLines * 5 + order.items.length * 3 + (isDelivery ? 14 : 0)
+    const estimateLocationLines = locationText
+      ? estimateTextLines(locationText, 30)
+      : 0;
+    const summaryLineCount = 2 + (isDelivery && Number(order.deliveryFee) > 0 ? 1 : 0);
+    const receiptHeight = Math.ceil(
+      55 +
+        estimateLocationLines * 3.5 +
+        estimateItemLines * 3.6 +
+        order.items.length * 1.8 +
+        summaryLineCount * 3.8
     );
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
-      format: [80, receiptHeight],
+      format: [pageWidth, Math.max(58, receiptHeight)],
     });
 
-    const pageWidth = 80;
-    const margin = 5;
-    const rightEdge = pageWidth - margin;
     const divider = (yPos) => doc.line(margin, yPos, rightEdge, yPos);
 
     doc.setProperties({ title: `TABAN FOOD RECEIPT ${order.id || ""}` });
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("TABAN FOOD", pageWidth / 2, 8, { align: "center" });
     doc.setFontSize(9);
-    doc.text("RECEIPT", pageWidth / 2, 13, { align: "center" });
+    doc.text("TABAN FOOD", pageWidth / 2, 7, { align: "center" });
+    doc.setFontSize(7);
+    doc.text("RECEIPT", pageWidth / 2, 11, { align: "center" });
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    let y = 20;
+    doc.setFontSize(6);
+    let y = 16;
     doc.text(`Date: ${order.date}`, margin, y);
-    y += 5;
+    y += 4;
     doc.text(`User: ${order.createdBy || "unknown"}`, margin, y);
-    y += 5;
+    y += 4;
     doc.text(`Type: ${order.deliveryType || "pickup"}`, margin, y);
-    y += 5;
+    y += 4;
 
-    if (isDelivery && deliveryLocation) {
+    if (locationText) {
       const locationLines = doc.splitTextToSize(
-        `Location: ${deliveryLocation.label}`,
-        68
+        locationText,
+        rightEdge - margin
       );
       doc.text(locationLines, margin, y);
-      y += locationLines.length * 4 + 2;
+      y += locationLines.length * 3.5 + 2;
     }
 
     divider(y);
-    y += 5;
+    y += 4;
 
-    const tableHeaderFontSize = 7;
-    const tableBodyFontSize = 7;
-    const qtyX = 34;
-    const priceX = 49;
+    const tableHeaderFontSize = 6;
+    const tableBodyFontSize = 6;
+    const qtyX = 26;
+    const priceX = 39;
     const totalX = rightEdge;
-    const itemColumnWidth = 24;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(tableHeaderFontSize);
@@ -1487,9 +1500,9 @@ export default function App() {
     doc.text("Qty", qtyX, y, { align: "center" });
     doc.text("Price", priceX, y, { align: "center" });
     doc.text("Total", totalX, y, { align: "right" });
-    y += 3;
+    y += 2.8;
     divider(y);
-    y += 5;
+    y += 4;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(tableBodyFontSize);
@@ -1501,28 +1514,28 @@ export default function App() {
       doc.text(`$${(item.price * item.qty).toFixed(2)}`, totalX, y, {
         align: "right",
       });
-      y += itemLines.length * 4 + 3;
+      y += itemLines.length * 3.6 + 2;
     });
 
     divider(y);
-    y += 6;
-    doc.setFontSize(8);
+    y += 4.5;
+    doc.setFontSize(6);
     doc.text(`Subtotal: $${subtotal.toFixed(2)}`, margin, y);
-    y += 5;
+    y += 3.8;
     doc.text(`Tax ($0.05/item): $${tax.toFixed(2)}`, margin, y);
-    y += 5;
+    y += 3.8;
     if (isDelivery && Number(order.deliveryFee) > 0) {
       doc.text(`Delivery fee: $${Number(order.deliveryFee).toFixed(2)}`, margin, y);
-      y += 5;
+      y += 3.8;
     }
-    y += 1;
+    y += 1.5;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     doc.text(`GRAND TOTAL: $${order.total.toFixed(2)}`, rightEdge, y, {
       align: "right",
     });
-    y += 9;
-    doc.setFontSize(8);
+    y += 7;
+    doc.setFontSize(6);
     doc.text("Thank you!", pageWidth / 2, y, { align: "center" });
     doc.autoPrint();
     const pdfUrl = doc.output("bloburl");
