@@ -571,12 +571,13 @@ export default function App() {
       return {
         district: district || "Unknown",
         neighborhood: neighborhood || "Unknown",
+        label: [neighborhood, district].filter(Boolean).join(", "),
       };
     }
 
     const raw = (order.deliveryAddress || "").trim();
     if (!raw) {
-      return { district: "Unknown", neighborhood: "Unknown" };
+      return { district: "Unknown", neighborhood: "Unknown", label: "Unknown" };
     }
 
     const [rawNeighborhood, ...rest] = raw.split(",");
@@ -585,6 +586,7 @@ export default function App() {
     return {
       neighborhood: rawNeighborhood?.trim() || "Unknown",
       district: districtPart?.trim() || "Unknown",
+      label: raw,
     };
   };
   const paidReceiptLocation = paidReceiptOrder
@@ -1472,12 +1474,15 @@ export default function App() {
     divider(y);
     y += 5;
 
-    doc.setFont("helvetica", "bold");
-    const qtyX = 41;
-    const priceX = 57;
+    const tableHeaderFontSize = 7;
+    const tableBodyFontSize = 7;
+    const qtyX = 34;
+    const priceX = 49;
     const totalX = rightEdge;
-    const itemColumnWidth = 29;
+    const itemColumnWidth = 24;
 
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(tableHeaderFontSize);
     doc.text("Item", margin, y);
     doc.text("Qty", qtyX, y, { align: "center" });
     doc.text("Price", priceX, y, { align: "center" });
@@ -1487,6 +1492,7 @@ export default function App() {
     y += 5;
 
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(tableBodyFontSize);
     order.items.forEach((item) => {
       const itemLines = doc.splitTextToSize(String(item.name || "Item"), itemColumnWidth);
       doc.text(itemLines, margin, y);
@@ -1500,6 +1506,7 @@ export default function App() {
 
     divider(y);
     y += 6;
+    doc.setFontSize(8);
     doc.text(`Subtotal: $${subtotal.toFixed(2)}`, margin, y);
     y += 5;
     doc.text(`Tax ($0.05/item): $${tax.toFixed(2)}`, margin, y);
@@ -1510,7 +1517,7 @@ export default function App() {
     }
     y += 1;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.text(`GRAND TOTAL: $${order.total.toFixed(2)}`, rightEdge, y, {
       align: "right",
     });
